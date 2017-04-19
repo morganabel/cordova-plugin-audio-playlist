@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-plugin-ios-audio-playlist" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>cordova-plugin-ios-audio-playlist</name>
+    <js-module name="cordova-plugin-ios-audio-playlist" src="www/cordova-plugin-ios-audio-playlist.js">
+        <clobbers target="iosAudioPlaylist" />
+    </js-module>
+    <platform name="ios">
+        <config-file parent="/*" target="config.xml">
+            <feature name="CordovaPluginIosAudioPlaylist">
+                <param name="ios-package" value="CordovaPluginIosAudioPlaylist" />
+            </feature>
+        </config-file>
+        <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
+        <source-file src="src/ios/cordova-plugin-ios-audio-playlist.swift" />
+        <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
+    </platform>
+</plugin>

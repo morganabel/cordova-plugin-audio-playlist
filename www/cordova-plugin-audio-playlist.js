@@ -1,7 +1,7 @@
 var exec = require('cordova/exec');
 
-exports.initAudio = function(arg0, success, error) {
-    exec(success, error, "CordovaPluginAudioPlaylist", "initAudio", [arg0]);
+exports.initAudio = function(success, error) {
+    exec(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);
 };
 
 exports.clear = function(arg0, success, error) {

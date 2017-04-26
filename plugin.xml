@@ -23,6 +23,6 @@
         </config-file>
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
         <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
-        <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
     </platform>
+    <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
 </plugin>

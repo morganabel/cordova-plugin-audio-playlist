@@ -1,0 +1,34 @@
+{
+  "name": "cordova-audio-playlist",
+  "version": "0.0.1",
+  "description": "Cordova Audio Playlist",
+  "cordova": {
+    "id": "cordova-audio-playlist",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apache/cordova-plugin-device"
+  },
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "audio",
+    "playlist"
+  ],
+  "author": "Morgan Abel",
+  "license": "MIT",
+  "engines": {
+    "cordovaDependencies": {
+        "<1.0.0": { "cordova": ">6.0.0" },
+        "<1.0.0": { "cordova-plugin-file": ">4.0.0" },
+        "<1.0.0": { "cordova-plugin-file-transfer": ">1.6.0" },
+        "<1.0.0": { "cordova-plugin-network-information": ">1.3.0" }
+    }
+  }
+}

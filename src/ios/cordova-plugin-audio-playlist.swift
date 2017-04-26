@@ -1,7 +1,7 @@
 import AVFoundation
 import MediaPlayer
 
-@objc(CordovaPluginIosAudioPlaylist) class CordovaPluginIosAudioPlaylist : CDVPlugin {
+@objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin {
     let avQueuePlayer:AVQueuePlayer = AVQueuePlayer();
 
     @objc(initAudio:)
@@ -10,8 +10,8 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginIosAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
-        //NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginIosAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
+        NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
+        //NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
         do {
             try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
             let _ = try AVAudioSession.sharedInstance().setActive(true)

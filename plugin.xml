@@ -1,17 +1,28 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-plugin-ios-audio-playlist" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
-    <name>cordova-plugin-ios-audio-playlist</name>
-    <js-module name="cordova-plugin-ios-audio-playlist" src="www/cordova-plugin-ios-audio-playlist.js">
-        <clobbers target="iosAudioPlaylist" />
+<plugin id="cordova-plugin-audio-playlist" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>cordova-plugin-audio-playlist</name>
+    <js-module name="cordova-plugin-audio-playlist" src="www/cordova-plugin-audio-playlist.js">
+        <clobbers target="cordovaAudioPlaylist" />
     </js-module>
+    <platform name="android">
+        <config-file parent="/*" target="res/xml/config.xml">
+            <feature name="CordovaPluginAudioPlaylist">
+                <param name="android-package" value="com.mabel.plugins.CordovaPluginAudioPlaylist" />
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.INTERNET" />
+        </config-file>
+        <source-file src="src/android/cordova-plugin-audio-playlist.java" target-dir="src/com/mabel/plugins" />
+    </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">
-            <feature name="CordovaPluginIosAudioPlaylist">
-                <param name="ios-package" value="CordovaPluginIosAudioPlaylist" />
+            <feature name="CordovaPluginAudioPlaylist">
+                <param name="ios-package" value="CordovaPluginAudioPlaylist" />
             </feature>
         </config-file>
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
-        <source-file src="src/ios/cordova-plugin-ios-audio-playlist.swift" />
+        <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
         <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
     </platform>
 </plugin>

@@ -4,6 +4,10 @@
     <js-module name="cordova-plugin-audio-playlist" src="www/cordova-plugin-audio-playlist.js">
         <clobbers target="cordovaAudioPlaylist" />
     </js-module>
+    <engines>
+        <engine name="cordova" version=">=6.0.0" />
+        <engine name="cordova-ios" version=">=4.0.0" />
+    </engines>
     <platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="CordovaPluginAudioPlaylist">
@@ -25,4 +29,7 @@
         <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
     </platform>
     <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
+    <dependency id="cordova-plugin-file" version=">4.0.0"/>
+    <dependency id="cordova-plugin-file-transfer" version=">1.6.0"/>
+    <dependency id="cordova-plugin-network-information" version=">1.3.0">
 </plugin>

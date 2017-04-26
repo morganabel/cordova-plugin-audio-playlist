@@ -22,14 +22,5 @@
     "playlist"
   ],
   "author": "Morgan Abel",
-  "license": "MIT",
-  "engines": {
-    "cordovaDependencies": {
-        "<1.0.0": { "cordova": ">6.0.0" },
-        "<1.0.0": { "cordova-ios": ">4.0.0" },
-        "<1.0.0": { "cordova-plugin-file": ">4.0.0" },
-        "<1.0.0": { "cordova-plugin-file-transfer": ">1.6.0" },
-        "<1.0.0": { "cordova-plugin-network-information": ">1.3.0" }
-    }
-  }
+  "license": "MIT"
 }

@@ -1,28 +1,28 @@
 import AVFoundation
 import MediaPlayer
+import SwiftyJSON
 
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin {
     let avQueuePlayer:AVQueuePlayer = AVQueuePlayer();
 
     @objc(initAudio:)
-    func initAudio(command: CDVInvokedUrlCommand) {
+    func initAudio(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(
             status: CDVCommandStatus_ERROR
         )
 
-        NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
+        //let observer = NotificationCenter.default.addObserver(forName: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance(), queue: nil, using: audioSessionInterrupted)
+        //NotificationCenter.default.addObserver(self, selector: #selector(audioSessionInterrupted), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
         //NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
         do {
             try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
             let _ = try AVAudioSession.sharedInstance().setActive(true)
 
             pluginResult = CDVPluginResult(
-                status: CDVCommandStatus_OK,
-                messageAs: "success"
+                status: CDVCommandStatus_OK
             )
         } catch let error as NSError {
             print("an error occurred when setting audio session category.\n \(error)")
-            pluginResult.messageAs = "an error occurred when setting audio session category. \(error)";
         }
 
         self.commandDelegate!.send(
@@ -31,24 +31,47 @@ import MediaPlayer
         )
     }
 
-    @objc(addItem:)
-    func addItem(command: CDVInvokedUrlCommand) {
+    @objc(clearPlaylist:)
+    func clearPlaylist(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(
             status: CDVCommandStatus_ERROR
         )
 
-        let data = command.arguments[0] as? Dictionary<String, AnyObject!> ?? [String:AnyObject!]()
-        let song = AVPlayerItem(url: data["url"] as! String)
-        let autoPlay = data["autoPlay"] as? Bool ?? false
+        avQueuePlayer.removeAllItems();
 
-        self!.avQueuePlayer.insert(avSongItem, after: nil)
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
+    @objc(addItem:)
+    func addItem(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        let data = JSON(command.arguments[0]);
+        let url = URL(string: data["url"].stringValue)
+        let song = AVPlayerItem(url: url!)
+        let autoPlay = data["autoPlay"].bool ?? false
+
+        avQueuePlayer.insert(song, after: nil)
         if autoPlay {
-            self!.avQueuePlayer.play();
+            avQueuePlayer.play();
         }
 
+        let title = data["title"].stringValue
+        let artist = data["artist"].stringValue
+        let album = data["album"].stringValue
+        let cover = data["cover"].stringValue
 
         //display now playing info on control center
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [MPMediaItemPropertyTitle: data["title"], MPMediaItemPropertyArtist: data["artist"]]
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = [MPMediaItemPropertyTitle: title, MPMediaItemPropertyArtist: artist]
 
         //Load artwork.
         DispatchQueue.global(qos: .default).async(execute: {() -> Void in
@@ -56,8 +79,12 @@ import MediaPlayer
             if !cover.isEqual("") {
                 if cover.hasPrefix("http://") || cover.hasPrefix("https://") {
                     var imageURL = URL(string: cover)
-                    var imageData = Data(contentsOf: imageURL)
-                    image = UIImage(data: imageData)
+                    do {
+                        var imageData = try Data(contentsOf: imageURL!)
+                        image = UIImage(data: imageData)
+                    } catch {
+                        print("error occurred loading image.\n \(error)")
+                    }
                 }
                 else if cover.hasPrefix("file://") {
                     var fullPath: String = cover.replacingOccurrences(of: "file://", with: "")
@@ -78,13 +105,13 @@ import MediaPlayer
             else {
                 image = UIImage(named: "no-image")
             }
-            var cgref: CGImageRef? = image?.cgImage
+            var cgref: CGImage? = image?.cgImage
             var cim: CIImage? = image?.ciImage
             if cim != nil || cgref != nil {
                 DispatchQueue.main.async(execute: {() -> Void in
-                    if NSClassFromString("MPNowPlayingInfoCenter") {
-                        var artwork = MPMediaItemArtwork(image: image)
-                        var center = MPNowPlayingInfoCenter.default
+                    if NSClassFromString("MPNowPlayingInfoCenter") != nil {
+                        var artwork = MPMediaItemArtwork(image: image!)
+                        var center = MPNowPlayingInfoCenter.default()
                         center.nowPlayingInfo = [
                             MPMediaItemPropertyArtist : artist,
                             MPMediaItemPropertyTitle : title,
@@ -96,7 +123,9 @@ import MediaPlayer
             }
         })
 
-        pluginResult.status = CDVCommandStatus_OK
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK
+        )
 
         self.commandDelegate!.send(
             pluginResult,
@@ -105,15 +134,14 @@ import MediaPlayer
     }
 
     @objc(play:)
-    func play(command: CDVInvokedUrlCommand) {
+    func play(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(
             status: CDVCommandStatus_ERROR
         )
 
         avQueuePlayer.play();
         pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_OK,
-            messageAs: "success"
+            status: CDVCommandStatus_OK
         )
 
         self.commandDelegate!.send(
@@ -123,15 +151,14 @@ import MediaPlayer
     }
 
     @objc(pause:)
-    func pause(command: CDVInvokedUrlCommand) {
+    func pause(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(
             status: CDVCommandStatus_ERROR
         )
 
         avQueuePlayer.pause();
         pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_OK,
-            messageAs: "success"
+            status: CDVCommandStatus_OK
         )
 
         self.commandDelegate!.send(
@@ -140,7 +167,7 @@ import MediaPlayer
         )
     }
 
-    class func audioSessionInterrupted(_ notification:Notification)
+    @objc func audioSessionInterrupted(_ notification:Notification)
     {
         print("interruption received: \(notification)")
     }

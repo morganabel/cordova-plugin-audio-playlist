@@ -9,7 +9,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.media.mediaPlayer;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.media.MediaRecorder;
+import android.os.Environment;
 
 public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
@@ -20,7 +26,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         if (action.equals("initAudio")) {
-            this.setPublishableKey(callbackContext);
+            this.initAudio(callbackContext);
         } else if (action.equals("")) {
 
         } else {
@@ -34,7 +40,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         callbackContext.success();
     }
 
-    private void clear() {
+    private void clearPlaylist() {
 
     }
 

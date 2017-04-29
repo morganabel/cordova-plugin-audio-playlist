@@ -4,7 +4,7 @@ exports.initAudio = function(success, error) {
     exec(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);
 };
 
-exports.clear = function(arg0, success, error) {
+exports.clearPlaylist = function(arg0, success, error) {
     exec(success, error, "CordovaPluginAudioPlaylist", "clear", [arg0]);
 }
 

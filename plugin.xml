@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <plugin id="cordova-plugin-audio-playlist" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
-    <name>cordova-plugin-audio-playlist</name>
+    <name>CordovaPluginAudioPlaylist</name>
     <js-module name="cordova-plugin-audio-playlist" src="www/cordova-plugin-audio-playlist.js">
         <clobbers target="cordovaAudioPlaylist" />
     </js-module>
@@ -17,7 +17,7 @@
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.INTERNET" />
         </config-file>
-        <source-file src="src/android/cordova-plugin-audio-playlist.java" target-dir="src/com/mabel/plugins" />
+        <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">
@@ -25,8 +25,10 @@
                 <param name="ios-package" value="CordovaPluginAudioPlaylist" />
             </feature>
         </config-file>
+        <framework src="AVFoundation.framework" weak="true" />
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
         <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
+        <source-file src="src/ios/SwiftyJson.swift" />
     </platform>
     <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
     <dependency id="cordova-plugin-file" version=">4.0.0"/>

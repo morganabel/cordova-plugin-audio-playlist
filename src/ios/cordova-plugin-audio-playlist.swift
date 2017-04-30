@@ -1,9 +1,10 @@
 import AVFoundation
 import MediaPlayer
-import SwiftyJSON
 
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin {
     let avQueuePlayer:AVQueuePlayer = AVQueuePlayer();
+    var playerCallbackId:String = nil;
+    var playerTracks = [String, JSON]]()
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -17,6 +18,8 @@ import SwiftyJSON
         do {
             try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
             let _ = try AVAudioSession.sharedInstance().setActive(true)
+
+            avQueuePlayer.actionAtItemEnd = .advance
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -38,6 +41,7 @@ import SwiftyJSON
         )
 
         avQueuePlayer.removeAllItems();
+        playerTracks.removeAll();
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -64,6 +68,25 @@ import SwiftyJSON
         if autoPlay {
             avQueuePlayer.play();
         }
+
+        
+
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
+    @objc(setMetadata:)
+    func setMetadata(_ item: AVPlayerItem) {
+        let asset = item.asset;
+        var url = asset.url;
+
+        var data = playerTracks[url]!
 
         let title = data["title"].stringValue
         let artist = data["artist"].stringValue
@@ -122,6 +145,19 @@ import SwiftyJSON
                 })
             }
         })
+    }
+
+    @objc(toggle:)
+    func toggle(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        if avQueuePlayer.rate > 0.0 {
+            avQueuePlayer.pause()
+        } else {
+            avQueuePlayer.play()
+        }
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -165,6 +201,44 @@ import SwiftyJSON
             pluginResult,
             callbackId: command.callbackId
         )
+    }
+
+    func getCurrentSongStatus()) {
+        let item = avQueuePlayer.currentItem;
+        let asset = item!.asset;
+        var url = asset.url;
+
+        var data = playerTracks[url]!
+
+        var output = [String, Any]()
+        output["title"] = data["title"].stringValue
+        output["artist"] = data["artist"].stringValue
+        output["album"] = data["album"].stringValue
+        output["cover"] = data["cover"].stringValue
+        output["url"] = url
+        
+        switch item.status {
+        case .readyToPlay:
+        // Player item is ready to play.
+            output["status"] = 1
+        case .failed:
+        // Player item failed. See error.
+            output["status"] = 2
+        case .unknown:
+            // Player item is not yet ready.
+            output["status"] = 0
+        }
+
+        return output
+    }
+
+    @objc func updateSongStatus(_ notification: Notification) {
+        let songData: [String: Any] = getCurrentSongStatus()
+        if callbackId {
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: songData)
+            result.keepCallbackAs = true
+            commandDelegate.send(result, callbackId: self.callbackId)
+        }
     }
 
     @objc func audioSessionInterrupted(_ notification:Notification)

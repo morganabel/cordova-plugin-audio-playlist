@@ -10,16 +10,9 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        //let observer = NotificationCenter.default.addObserver(forName: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance(), queue: nil, using: audioSessionInterrupted)
-        //NotificationCenter.default.addObserver(self, selector: #selector(audioSessionInterrupted), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
-        //NotificationCenter.default.addObserver(self, selector: #selector(CordovaPluginAudioPlaylist.audioSessionInterrupted(_:)), name: NSNotification.Name.AVAudioSessionInterruption, object: AVAudioSession.sharedInstance())
         do {
-            try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
-            let _ = try AVAudioSession.sharedInstance().setActive(true)
-
-            avQueuePlayer = AVQueuePlayer()
-            avQueuePlayer.actionAtItemEnd = .advance
-            avQueuePlayer.rate = 1
+            // configure jukebox
+            jukebox = Jukebox(delegate: self, items: [])!
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -31,8 +24,6 @@ import MediaPlayer
         // MPNowPlayingInfoCenter
         UIApplication.shared.beginReceivingRemoteControlEvents()
 
-        NotificationCenter.default.addObserver(self, selector: #selector(self.updateSongStatus), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.avQueuePlayer.currentItem)
-
         self.commandDelegate!.send(
             pluginResult,
             callbackId: command.callbackId
@@ -40,9 +31,7 @@ import MediaPlayer
     }
 
     deinit {
-        if avQueuePlayer != nil {
-            NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.radioPlayer.currentItem)
-        }
+
     }
 
     @objc(clearPlaylist:)
@@ -51,9 +40,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        avQueuePlayer.removeAllItems();
-        playerTracks.removeAll();
-        trackIndex = 0
+        jukebox.removeAllItems();
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -72,16 +59,35 @@ import MediaPlayer
         )
 
         let data = JSON(command.arguments[0]);
-        let url = URL(string: data["url"].stringValue)
-        let song = AVPlayerItem(url: url!)
-        let autoPlay = data["autoPlay"].bool ?? false
+        
+        let title = data["title"].stringValue
+        let artist = data["artist"].stringValue
+        let album = data["album"].stringValue
+        let cover = data["cover"].stringValue
+        var autoPlay = data["autoPlay"].bool
 
-        avQueuePlayer.insert(song, after: nil)
-        if autoPlay {
-            avQueuePlayer.play();
+        var image: UIImage? = nil
+        var imageURL = URL(string: cover)
+        do {
+            var imageData = try Data(contentsOf: imageURL!)
+            image = UIImage(data: imageData)
+        } catch {
+            print("error occurred loading image.\n \(error)")
         }
 
-        playerTracks[data["url"].stringValue] = data
+        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!)
+        item.customMetaBuilder = JukeboxItemMetaBuilder({ (builder) in
+            builder.title = title
+            builder.artist = artist
+            builder.artwork = image
+            builder.album = album
+        })
+
+        jukebox.append(item: item, loadingAssets: true)
+
+        if autoPlay {
+            jukebox.play();
+        }
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -165,10 +171,10 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        if avQueuePlayer.rate > 0.0 {
-            avQueuePlayer.pause()
+        if jukebox.state == .playing {
+            jukebox.pause()
         } else {
-            avQueuePlayer.play()
+            jukebox.play()
         }
 
         pluginResult = CDVPluginResult(
@@ -187,7 +193,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        avQueuePlayer.play();
+        jukebox.play()
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
         )
@@ -204,7 +210,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        avQueuePlayer.pause();
+        jukebox.pause();
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
         )
@@ -255,26 +261,58 @@ import MediaPlayer
         }
     }
 
-    @objc func audioSessionInterrupted(_ notification:Notification)
-    {
-        print("interruption received: \(notification)")
+    func jukeboxDidLoadItem(_ jukebox: Jukebox, item: JukeboxItem) {
+        print("Jukebox did load: \(item.URL.lastPathComponent)")
     }
 
-    func remoteControlReceivedWithEvent(_ receivedEvent:UIEvent)  {
-        if (receivedEvent.type == .remoteControl) {
-            switch receivedEvent.subtype {
+    func jukeboxPlaybackProgressDidChange(_ jukebox: Jukebox) {
+        if let currentTime = jukebox.currentItem?.currentTime, let duration = jukebox.currentItem?.meta.duration {
+            let value = Float(currentTime / duration)
+        } else {
+
+        }
+    }
+
+    func jukeboxStateDidChange(_ jukebox: Jukebox) {
+        if jukebox.state == .ready {
+
+        } else if jukebox.state == .loading  {
+
+        } else {
+            switch jukebox.state {
+            case .playing, .loading:
+
+            case .paused, .failed, .ready:
+
+            }
+        }
+
+        print("Jukebox state changed to \(jukebox.state)")
+    }
+
+    func jukeboxDidUpdateMetadata(_ jukebox: Jukebox, forItem: JukeboxItem) {
+        print("Item updated:\n\(forItem)")
+    }
+
+    override func remoteControlReceived(with event: UIEvent?) {
+        if event?.type == .remoteControl {
+            switch event!.subtype {
+            case .remoteControlPlay :
+                jukebox.play()
+            case .remoteControlPause :
+                jukebox.pause()
+            case .remoteControlNextTrack :
+                jukebox.playNext()
+            case .remoteControlPreviousTrack:
+                jukebox.playPrevious()
             case .remoteControlTogglePlayPause:
-                if avQueuePlayer.rate > 0.0 {
-                    avQueuePlayer.pause()
+                if jukebox.state == .playing {
+                    jukebox.pause()
                 } else {
-                    avQueuePlayer.play()
+                    jukebox.play()
                 }
-            case .remoteControlPlay:
-                avQueuePlayer.play()
-            case .remoteControlPause:
-                avQueuePlayer.pause()
             default:
-                print("received sub type \(receivedEvent.subtype) Ignoring")
+                break
             }
         }
     }

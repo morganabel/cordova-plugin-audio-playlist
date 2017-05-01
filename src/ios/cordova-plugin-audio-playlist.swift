@@ -2,9 +2,10 @@ import AVFoundation
 import MediaPlayer
 
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin {
-    let avQueuePlayer:AVQueuePlayer = AVQueuePlayer();
+    var avQueuePlayer:AVQueuePlayer = nil
     var playerCallbackId:String = nil;
     var playerTracks = [String, JSON]]()
+    var trackIndex = 0
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -19,7 +20,9 @@ import MediaPlayer
             try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
             let _ = try AVAudioSession.sharedInstance().setActive(true)
 
+            avQueuePlayer = AVQueuePlayer()
             avQueuePlayer.actionAtItemEnd = .advance
+            avQueuePlayer.rate = 1
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -28,10 +31,21 @@ import MediaPlayer
             print("an error occurred when setting audio session category.\n \(error)")
         }
 
+        // MPNowPlayingInfoCenter
+        UIApplication.shared.beginReceivingRemoteControlEvents()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(self.updateSongStatus), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.avQueuePlayer.currentItem)
+
         self.commandDelegate!.send(
             pluginResult,
             callbackId: command.callbackId
         )
+    }
+
+    deinit {
+        if avQueuePlayer != nil {
+            NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: self.radioPlayer.currentItem)
+        }
     }
 
     @objc(clearPlaylist:)
@@ -42,6 +56,7 @@ import MediaPlayer
 
         avQueuePlayer.removeAllItems();
         playerTracks.removeAll();
+        trackIndex = 0
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -69,7 +84,7 @@ import MediaPlayer
             avQueuePlayer.play();
         }
 
-        
+        playerTracks[data["url"].stringValue] = data
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK
@@ -216,13 +231,15 @@ import MediaPlayer
         output["album"] = data["album"].stringValue
         output["cover"] = data["cover"].stringValue
         output["url"] = url
+        output["currentTime"] = item.currentTime
+        output["duration"] = item.duration
         
         switch item.status {
         case .readyToPlay:
-        // Player item is ready to play.
+            // Player item is ready to play.
             output["status"] = 1
         case .failed:
-        // Player item failed. See error.
+            // Player item failed. See error.
             output["status"] = 2
         case .unknown:
             // Player item is not yet ready.

@@ -1,11 +1,8 @@
 import AVFoundation
 import MediaPlayer
 
-@objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin {
-    var avQueuePlayer:AVQueuePlayer = nil
-    var playerCallbackId:String = nil;
-    var playerTracks = [String, JSON]]()
-    var trackIndex = 0
+@objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin, JukeboxDelegate {
+    var jukebox: Jukebox!
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {

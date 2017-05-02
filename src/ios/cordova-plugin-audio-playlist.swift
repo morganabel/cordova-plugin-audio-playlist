@@ -3,7 +3,7 @@ import MediaPlayer
 
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin, JukeboxDelegate {
     var jukebox: Jukebox!
-    var callbackId = nil
+    var callbackId: String? = nil
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -88,7 +88,7 @@ import MediaPlayer
 
         jukebox.append(item: item, loadingAssets: true)
 
-        if autoPlay! {
+        if autoPlay {
             jukebox.play();
         }
 
@@ -158,17 +158,17 @@ import MediaPlayer
         )
     }
 
-    func getCurrentSongStatus() {
+    func getCurrentSongStatus() -> [String:Any] {
         let item = jukebox.currentItem;
 
-        var output = [String, Any]()
+        var output = [String:Any]()
 
         return output
     }
 
     @objc func updateSongStatus(_ notification: Notification) {
         let songData: [String: Any] = getCurrentSongStatus()
-        if callbackId {
+        if callbackId != nil {
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
             result!.keepCallback = true
             commandDelegate.send(result, callbackId: self.callbackId)
@@ -209,7 +209,7 @@ import MediaPlayer
     }
 
     @objc func remoteControlReceived(_ notification: Notification) {
-        let event: UIEvent? = notification.object
+        let event: UIEvent? = notification.object as! UIEvent?
         if event?.type == .remoteControl {
             switch event!.subtype {
             case .remoteControlPlay :

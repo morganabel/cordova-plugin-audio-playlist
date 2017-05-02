@@ -31,7 +31,6 @@
         <source-file src="src/ios/MainViewControllerExtension.swift" />
         <source-file src="src/ios/Jukebox.swift" />
         <source-file src="src/ios/JukeboxItem.swift" />
-        <source-file src="src/ios/JukeboxMeta.swift" />
         <source-file src="src/ios/SwiftyJson.swift" />
     </platform>
     <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>

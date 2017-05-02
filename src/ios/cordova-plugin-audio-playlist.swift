@@ -24,7 +24,7 @@ import MediaPlayer
 
         // MPNowPlayingInfoCenter
         UIApplication.shared.beginReceivingRemoteControlEvents()
-        NotificationCenter.default.addObserver(self, selector: #selector(self.remoteControlReceived), name: NSNotification.Name.onRecievedEvent, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.remoteControlReceived), name: @"receivedEvent", object: nil)
 
         self.commandDelegate!.send(
             pluginResult,

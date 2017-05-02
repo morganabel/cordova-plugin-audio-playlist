@@ -17,6 +17,9 @@
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.INTERNET" />
         </config-file>
+        <js-module src="www/localforage.min.js" name="LocalForage">
+            <clobbers target="audioPlugin.localForage" />
+        </js-module>
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
     </platform>
     <platform name="ios">
@@ -25,6 +28,14 @@
                 <param name="ios-package" value="CordovaPluginAudioPlaylist" />
             </feature>
         </config-file>
+        <config-file target="*-Info.plist" parent="UIBackgroundModes">
+            <array>
+                <string>audio</string>
+            </array>
+        </config-file>
+        <js-module src="www/localforage.min.js" name="LocalForage">
+            <clobbers target="audioPlugin.localForage" />
+        </js-module>
         <framework src="AVFoundation.framework" weak="true" />
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
         <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
@@ -38,4 +49,6 @@
     <dependency id="cordova-plugin-file" version=">4.0.0"/>
     <dependency id="cordova-plugin-file-transfer" version=">1.6.0"/>
     <dependency id="cordova-plugin-network-information" version=">1.3.0" />
+    <dependency id="cordova-plugin-indexeddb-async" />
+    <dependency id="es6-promise-plugin" url="https://github.com/vstirbu/PromisesPlugin.git" />
 </plugin>

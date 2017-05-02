@@ -62,34 +62,35 @@ import MediaPlayer
         )
 
         let data = JSON(command.arguments[0]);
-        
-        let title = data["title"].stringValue
-        let artist = data["artist"].stringValue
-        let album = data["album"].stringValue
-        let cover = data["cover"].stringValue
         var autoPlay = data["autoPlay"].bool ?? false
-
-        var image: UIImage? = nil
-        var imageURL = URL(string: cover)
-        do {
-            var imageData = try Data(contentsOf: imageURL!)
-            image = UIImage(data: imageData)
-        } catch {
-            print("error occurred loading image.\n \(error)")
-        }
-
-        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!)
-        item.customMetaBuilder = JukeboxItem.MetaBuilder({ (builder) in
-            builder.title = title
-            builder.artist = artist
-            builder.artwork = image
-            builder.album = album
-        })
-
-        jukebox.append(item: item, loadingAssets: true)
+        
+        doAddItem(data);
 
         if autoPlay {
             jukebox.play();
+        }
+
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
+    @objc(addManyItems:)
+    func addManyItems(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        let tracks = command.arguments[0] as! [Any]
+
+        for track in tracks {
+            let data = JSON(track)
+            doAddItem(data)
         }
 
         pluginResult = CDVPluginResult(
@@ -158,15 +159,69 @@ import MediaPlayer
         )
     }
 
+    @objc(watch:)
+    func watch(_ command: CDVInvokedUrlCommand) {
+        callbackId = command.callbackId
+    }
+
+    func doAddItem(_ data: JSON) {
+        let title = data["title"].stringValue
+        let artist = data["artist"].stringValue
+        let album = data["album"].stringValue
+        let cover = data["cover"].stringValue
+        
+
+        var image: UIImage? = nil
+        var imageURL = URL(string: cover)
+        do {
+            var imageData = try Data(contentsOf: imageURL!)
+            image = UIImage(data: imageData)
+        } catch {
+            print("error occurred loading image.\n \(error)")
+        }
+
+        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!)
+        item.customMetaBuilder = JukeboxItem.MetaBuilder({ (builder) in
+            builder.title = title
+            builder.artist = artist
+            builder.artwork = image
+            builder.album = album
+        })
+
+        jukebox.append(item: item, loadingAssets: true)
+    }
+
     func getCurrentSongStatus() -> [String:Any] {
         let item = jukebox.currentItem;
 
         var output = [String:Any]()
+        output["duration"] = item?.meta.duration ?? 0
+        output["currentTime"] = item?.currentTime ?? 0
+        output["title"] = item?.meta.title ?? ""
+        output["playIndex"] = jukebox.playIndex
+
+        switch jukebox.state {
+        case .ready:
+            output["state"] = "ready"
+            break
+        case .playing:
+            output["state"] = "playing"
+            break
+        case .failed:
+            output["state"] = "failed"
+            break
+        case .paused:
+            output["state"] = "paused"
+            break
+        case .loading:
+            output["state"] = "loading"
+            break
+        }
 
         return output
     }
 
-    @objc func updateSongStatus(_ notification: Notification) {
+    @objc func updateSongStatus() {
         let songData: [String: Any] = getCurrentSongStatus()
         if callbackId != nil {
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
@@ -176,6 +231,7 @@ import MediaPlayer
     }
 
     func jukeboxDidLoadItem(_ jukebox: Jukebox, item: JukeboxItem) {
+        updateSongStatus()
         print("Jukebox did load: \(item.URL.lastPathComponent)")
     }
 
@@ -185,6 +241,8 @@ import MediaPlayer
         } else {
 
         }
+
+        updateSongStatus()
     }
 
     func jukeboxStateDidChange(_ jukebox: Jukebox) {
@@ -201,10 +259,14 @@ import MediaPlayer
             }
         }
 
+        updateSongStatus()
+
         print("Jukebox state changed to \(jukebox.state)")
     }
 
     func jukeboxDidUpdateMetadata(_ jukebox: Jukebox, forItem: JukeboxItem) {
+        updateSongStatus()
+
         print("Item updated:\n\(forItem)")
     }
 

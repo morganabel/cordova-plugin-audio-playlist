@@ -24,7 +24,7 @@ import MediaPlayer
 
         // MPNowPlayingInfoCenter
         UIApplication.shared.beginReceivingRemoteControlEvents()
-        NotificationCenter.default.addObserver(self, selector: #selector(self.remoteControlReceived), name: @"receivedEvent", object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.remoteControlReceived), name: NSNotification.Name(rawValue: "receivedEvent"), object: nil)
 
         self.commandDelegate!.send(
             pluginResult,
@@ -34,7 +34,7 @@ import MediaPlayer
 
     deinit {
         UIApplication.shared.endReceivingRemoteControlEvents()
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.onRecievedEvent, object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name(rawValue: "receivedEvent"), object: nil)
     }
 
     @objc(clearPlaylist:)

@@ -28,6 +28,7 @@
         <framework src="AVFoundation.framework" weak="true" />
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>
         <source-file src="src/ios/cordova-plugin-audio-playlist.swift" />
+        <source-file src="src/ios/MainViewControllerExtension.swift" />
         <source-file src="src/ios/Jukebox.swift" />
         <source-file src="src/ios/JukeboxItem.swift" />
         <source-file src="src/ios/JukeboxMeta.swift" />

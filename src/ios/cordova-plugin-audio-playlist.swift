@@ -3,6 +3,7 @@ import MediaPlayer
 
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin, JukeboxDelegate {
     var jukebox: Jukebox!
+    var callbackId = nil
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -23,6 +24,7 @@ import MediaPlayer
 
         // MPNowPlayingInfoCenter
         UIApplication.shared.beginReceivingRemoteControlEvents()
+        NotificationCenter.default.addObserver(self, selector: #selector(self.remoteControlReceived), name: NSNotification.Name.onRecievedEvent, object: nil)
 
         self.commandDelegate!.send(
             pluginResult,
@@ -31,7 +33,8 @@ import MediaPlayer
     }
 
     deinit {
-
+        UIApplication.shared.endReceivingRemoteControlEvents()
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.onRecievedEvent, object: nil)
     }
 
     @objc(clearPlaylist:)
@@ -64,7 +67,7 @@ import MediaPlayer
         let artist = data["artist"].stringValue
         let album = data["album"].stringValue
         let cover = data["cover"].stringValue
-        var autoPlay = data["autoPlay"].bool
+        var autoPlay = data["autoPlay"].bool ?? false
 
         var image: UIImage? = nil
         var imageURL = URL(string: cover)
@@ -76,7 +79,7 @@ import MediaPlayer
         }
 
         let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!)
-        item.customMetaBuilder = JukeboxItemMetaBuilder({ (builder) in
+        item.customMetaBuilder = JukeboxItem.MetaBuilder({ (builder) in
             builder.title = title
             builder.artist = artist
             builder.artwork = image
@@ -85,7 +88,7 @@ import MediaPlayer
 
         jukebox.append(item: item, loadingAssets: true)
 
-        if autoPlay {
+        if autoPlay! {
             jukebox.play();
         }
 
@@ -97,72 +100,6 @@ import MediaPlayer
             pluginResult,
             callbackId: command.callbackId
         )
-    }
-
-    @objc(setMetadata:)
-    func setMetadata(_ item: AVPlayerItem) {
-        let asset = item.asset;
-        var url = asset.url;
-
-        var data = playerTracks[url]!
-
-        let title = data["title"].stringValue
-        let artist = data["artist"].stringValue
-        let album = data["album"].stringValue
-        let cover = data["cover"].stringValue
-
-        //display now playing info on control center
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [MPMediaItemPropertyTitle: title, MPMediaItemPropertyArtist: artist]
-
-        //Load artwork.
-        DispatchQueue.global(qos: .default).async(execute: {() -> Void in
-            var image: UIImage? = nil
-            if !cover.isEqual("") {
-                if cover.hasPrefix("http://") || cover.hasPrefix("https://") {
-                    var imageURL = URL(string: cover)
-                    do {
-                        var imageData = try Data(contentsOf: imageURL!)
-                        image = UIImage(data: imageData)
-                    } catch {
-                        print("error occurred loading image.\n \(error)")
-                    }
-                }
-                else if cover.hasPrefix("file://") {
-                    var fullPath: String = cover.replacingOccurrences(of: "file://", with: "")
-                    var fileExists: Bool = FileManager.default.fileExists(atPath: fullPath)
-                    if fileExists {
-                        image = UIImage(contentsOfFile: fullPath)
-                    }
-                }
-                else {
-                    var basePath: String? = (NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as? String)
-                    var fullPath: String = "\(basePath)\(cover)"
-                    var fileExists: Bool = FileManager.default.fileExists(atPath: fullPath)
-                    if fileExists {
-                        image = UIImage(named: fullPath)
-                    }
-                }
-            }
-            else {
-                image = UIImage(named: "no-image")
-            }
-            var cgref: CGImage? = image?.cgImage
-            var cim: CIImage? = image?.ciImage
-            if cim != nil || cgref != nil {
-                DispatchQueue.main.async(execute: {() -> Void in
-                    if NSClassFromString("MPNowPlayingInfoCenter") != nil {
-                        var artwork = MPMediaItemArtwork(image: image!)
-                        var center = MPNowPlayingInfoCenter.default()
-                        center.nowPlayingInfo = [
-                            MPMediaItemPropertyArtist : artist,
-                            MPMediaItemPropertyTitle : title,
-                            MPMediaItemPropertyAlbumTitle : album,
-                            MPMediaItemPropertyArtwork : artwork
-                        ]
-                    }
-                })
-            }
-        })
     }
 
     @objc(toggle:)
@@ -221,33 +158,10 @@ import MediaPlayer
         )
     }
 
-    func getCurrentSongStatus()) {
-        let item = avQueuePlayer.currentItem;
-        let asset = item!.asset;
-        var url = asset.url;
-
-        var data = playerTracks[url]!
+    func getCurrentSongStatus() {
+        let item = jukebox.currentItem;
 
         var output = [String, Any]()
-        output["title"] = data["title"].stringValue
-        output["artist"] = data["artist"].stringValue
-        output["album"] = data["album"].stringValue
-        output["cover"] = data["cover"].stringValue
-        output["url"] = url
-        output["currentTime"] = item.currentTime
-        output["duration"] = item.duration
-        
-        switch item.status {
-        case .readyToPlay:
-            // Player item is ready to play.
-            output["status"] = 1
-        case .failed:
-            // Player item failed. See error.
-            output["status"] = 2
-        case .unknown:
-            // Player item is not yet ready.
-            output["status"] = 0
-        }
 
         return output
     }
@@ -255,8 +169,8 @@ import MediaPlayer
     @objc func updateSongStatus(_ notification: Notification) {
         let songData: [String: Any] = getCurrentSongStatus()
         if callbackId {
-            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: songData)
-            result.keepCallbackAs = true
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
+            result!.keepCallback = true
             commandDelegate.send(result, callbackId: self.callbackId)
         }
     }
@@ -281,9 +195,9 @@ import MediaPlayer
         } else {
             switch jukebox.state {
             case .playing, .loading:
-
+                break
             case .paused, .failed, .ready:
-
+                break
             }
         }
 
@@ -294,7 +208,8 @@ import MediaPlayer
         print("Item updated:\n\(forItem)")
     }
 
-    override func remoteControlReceived(with event: UIEvent?) {
+    @objc func remoteControlReceived(_ notification: Notification) {
+        let event: UIEvent? = notification.object
         if event?.type == .remoteControl {
             switch event!.subtype {
             case .remoteControlPlay :

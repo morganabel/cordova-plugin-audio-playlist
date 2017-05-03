@@ -13,11 +13,42 @@ exports.clearPlaylist = function(success, error) {
 }
 
 exports.addItem = function(arg0, success, error) {
-    return execPromise(success, error, "CordovaPluginAudioPlaylist", "addItem", [arg0]);
+    if (arg0 instanceof Object && arg0.hasOwnProperty("uid") && arg0.hasOwnProperty("url")) {
+        return audioPlugin.localForage.getItem("track-url-" + arg0.uid).then(function(result) {
+            if (null !== result) {
+                arg0.url = result;
+            }
+        }).catch(function(err) {
+
+        }).then(function() {
+            return execPromise(success, error, "CordovaPluginAudioPlaylist", "addItem", [arg0]);
+        })
+    } else {
+        throw "Track not a valid object";
+    }
 };
 
 exports.addManyItems = function(arg0, success, error) {
-    return execPromise(success, error, "CordovaPluginAudioPlaylist", "addManyItems", [arg0]);
+    if (Array.isArray(arg0)) {
+        return Promise.all(arg0.map(
+            function(track) {
+                return audioPlugin.localForage.getItem("track-url-" + track.uid).then(function(result) {
+                    if (null !== result) {
+                        track.url = result;
+                    }
+                })
+            })
+        ).then(function(successResult) {
+
+        }).catch(function(err) {
+
+        }).then(function() {
+            // Finally.
+            return execPromise(success, error, "CordovaPluginAudioPlaylist", "addManyItems", [arg0]);
+        });
+    } else {
+        throw "Add Many Items must be an array."
+    }
 };
 
 exports.play = function(arg0, success, error) {

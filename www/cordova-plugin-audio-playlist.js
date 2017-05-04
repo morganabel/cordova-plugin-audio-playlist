@@ -9,7 +9,7 @@ var downloadStatus = {
 
 exports.initAudio = function(success, error) {
     audioPlugin.localForage.config({
-        name: 'cordovaAudioPlaylits'
+        name: 'cordovaAudioPlaylists'
     });
 
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);

@@ -121,7 +121,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         var output = new JsonObject();
 
         output.put("duration", this.audioPlayer.getDuration());
-        output.put("currentTime", this.audioPlayer.getCurrentPosition())
+        output.put("currentTime", this.audioPlayer.getCurrentPosition());
         output.put("playIndex", this.audioPlayer.playIndex);
         output.put("state", this.audioPlayer.state.toString().toLowerCase());
 

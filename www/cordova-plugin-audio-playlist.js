@@ -26,7 +26,7 @@ exports.addItem = function(arg0, success, error) {
                 arg0.url = result;
             }
         }).catch(function(err) {
-
+            return Promise.reject(err);
         }).then(function() {
             return execPromise(success, error, "CordovaPluginAudioPlaylist", "addItem", [arg0]);
         })
@@ -48,7 +48,7 @@ exports.addManyItems = function(arg0, success, error) {
         ).then(function(successResult) {
 
         }).catch(function(err) {
-
+            return Promise.reject(err);
         }).then(function() {
             // Finally.
             return execPromise(success, error, "CordovaPluginAudioPlaylist", "addManyItems", [arg0]);
@@ -65,6 +65,14 @@ exports.play = function(success, error) {
 exports.pause = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "pause", []);
 };
+
+exports.stop = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "stop", []);
+}
+
+exports.loop = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "loop", []);
+}
 
 exports.watch = function(successCallback, error) {
     return exec(successCallback, error, "CordovaPluginAudioPlaylist", "watch", [])
@@ -105,23 +113,24 @@ function downloadPlaylist(playlist) {
             }
 
             Promise.all(
-                playlist.songs.map(function(song) {
+                playlist.songs.map(function(song, index) {
                     switch (song.downloadStatus) {
                         case downloadStatus.NONE:
                         case downloadStatus.FAILED:
                             return downloadTrack(song).then(function(trackResult) {
-                                audioPlugin.localForage.setItem("track-url-" + song.id).then(function(storeSongResult) {
-                                    song.url = trackResult;
-                                    song.downloadStatus = downloadStatus.DONE;
+                                return audioPlugin.localForage.setItem("track-url-" + song.id, trackResult).then(function(storeSongResult) {
+                                    playlist.songs[index].url = trackResult;
+                                    playlist.songs[index].downloadStatus = downloadStatus.DONE;
                                 });
                             }).catch(function(trackErr) {
-                                song.downloadStatus = downloadStatus.FAILED;
+                                playlist.songs[index].downloadStatus = downloadStatus.FAILED;
                             });
                         default:
                             return Promise.resolve();
                     }
                 })
             ).then(function(allSuccess) {
+                playlist.downloadStatus = downloadStatus.DONE;
                 audioPlugin.localForage.setItem("playlist-" + playlist.id, playlist).then(function() {
                     resolve(playlist);
                 }).catch(function(saveErr) {
@@ -136,17 +145,19 @@ function downloadPlaylist(playlist) {
 
 function downloadTrack(track) {
     return new Promise(function(resolve, reject) {
-        window.requestFileSystem(cordova.file.dataDirectory, 0, function (fs) {
+        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dirEntry) {
             var fileTransfer = new FileTransfer();
-            var uri = encodeURI(track.url);
+            var uri = track.url;
 
             // Parameters passed to getFile create a new file or return the file if it already exists.
-            fs.root.getFile(track.id + '.mp3', { create: true, exclusive: false }, function (fileEntry) {
+            dirEntry.getFile(track.id + '.mp3', { create: true, exclusive: false }, function (fileEntry) {
+                console.log(fileEntry.nativeURL);
+
                 fileTransfer.download(
                     uri,
-                    fileEntry,
+                    fileEntry.nativeURL,
                     function(entry) {
-                        resolve(entry.toURL());
+                        resolve(entry.nativeURL);
                     },
                     function(error) {
                         reject(error);

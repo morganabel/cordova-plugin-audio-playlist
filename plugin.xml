@@ -16,11 +16,13 @@
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
         </config-file>
         <js-module src="www/localforage.min.js" name="LocalForage">
             <clobbers target="audioPlugin.localForage" />
         </js-module>
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
+        <source-file src="src/android/AudioPlayer.java" target-dir="src/com/mabel/plugins" />
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">
@@ -46,7 +48,7 @@
         <source-file src="src/ios/SwiftyJson.swift" />
     </platform>
     <dependency id="cordova-plugin-add-swift-support" version="1.6.2"/>
-    <dependency id="cordova-plugin-file" version=">4.0.0"/>
+    <dependency id="cordova-plugin-file" version="4.3.2"/>
     <dependency id="cordova-plugin-file-transfer" version=">1.6.0"/>
     <dependency id="cordova-plugin-network-information" version=">1.3.0" />
     <dependency id="cordova-plugin-indexeddb-async" />

@@ -66,6 +66,14 @@ exports.pause = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "pause", []);
 };
 
+exports.next = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "next", []);
+}
+
+exports.previous = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "previous", []);
+}
+
 exports.stop = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "stop", []);
 }

@@ -1,13 +1,19 @@
 package com.mabel.plugins;
 
 import org.apache.cordova.CordovaPlugin;
+
+import java.util.ArrayList;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.PluginResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.mabel.plugins.AudioPlayer.STATE;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -15,6 +21,10 @@ import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Environment;
 import android.net.Uri;
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
 
 public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private CallbackContext callbackId = null;
@@ -51,6 +61,10 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             this.play();
         } else if (action.equals("pause")) {
             this.pause();
+        } else if (action.equals("next")) {
+            this.next();
+        } else if (action.equals("previous")) {
+            this.previous();
         } else if (action.equals("stop")) {
             this.stop();
         } else if (action.equals("loop")) {
@@ -65,7 +79,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     public void updateSongStatus() {
-        JsonObject message = this.getCurrentSongStatus();
+        JSONObject message = this.getCurrentSongStatus();
 
         PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, message);
         pluginResult.setKeepCallback(true);
@@ -79,7 +93,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     private void clearPlaylist() {
-        this.audioPlayer.clearPlaylist();
+        this.audioPlayer.removeAllItems();
     }
 
     private void watch(CallbackContext context) {
@@ -87,13 +101,25 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     private void addItem(JSONObject track) {
-        var url = track.getString("url");
-        this.audioPlayer.addItem(this.stripFileProtocol(url));
+        try {
+            String url = track.getString("url");
+            this.audioPlayer.addItem(this.stripFileProtocol(url));
+
+            if (track.getBoolean("autoPlay") && this.audioPlayer.state != STATE.PLAYING) {
+                this.audioPlayer.play();
+            }
+        } catch (JSONException e) {
+            
+        }
     }
 
-    private void addManyItems(JSONArray tracks) {
-        for (JSONObject json : tracks) {
-            this.addItem(json);
+    private void addManyItems(JSONArray jsonArray) {
+        try {
+            for (int i=0;i<jsonArray.length();i++){ 
+                this.addItem(jsonArray.getJSONObject(i));
+            }
+        } catch (JSONException e) {
+
         }
     }
 
@@ -109,6 +135,14 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         this.audioPlayer.pause();
     }
 
+    private void next() {
+        this.audioPlayer.playNext();
+    }
+
+    private void previous() {
+        this.audioPlayer.playPrevious();
+    }
+
     private void stop() {
         this.audioPlayer.stop();
     }
@@ -117,13 +151,17 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         this.audioPlayer.replay();
     }
 
-    private JsonObject getCurrentSongStatus() {
-        var output = new JsonObject();
+    private JSONObject getCurrentSongStatus() {
+        JSONObject output = new JSONObject();
 
-        output.put("duration", this.audioPlayer.getDuration());
-        output.put("currentTime", this.audioPlayer.getCurrentPosition());
-        output.put("playIndex", this.audioPlayer.playIndex);
-        output.put("state", this.audioPlayer.state.toString().toLowerCase());
+        try {
+            output.put("duration", this.audioPlayer.getDuration());
+            output.put("currentTime", this.audioPlayer.getCurrentPosition());
+            output.put("playIndex", this.audioPlayer.playIndex);
+            output.put("state", this.audioPlayer.state.toString().toLowerCase());
+        } catch (JSONException e) {
+            
+        }
 
         return output;
     }

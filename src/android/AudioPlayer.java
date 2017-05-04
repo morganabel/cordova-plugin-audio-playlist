@@ -6,12 +6,21 @@ import org.json.JSONObject;
 
 import com.mabel.plugins.CordovaPluginAudioPlaylist;
 
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Environment;
+import android.os.Handler;
 import java.util.*;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 public class AudioPlayer implements OnCompletionListener, OnPreparedListener, OnErrorListener {
     // AudioPlayer states
@@ -33,7 +42,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     private CordovaPluginAudioPlaylist cordovaLink = null;
     private Handler progressTimerHandler = new Handler();
     private Runnable progressRunnable = null;
-    private final Long progressTimerInterval = 500;
+    private final Integer progressTimerInterval = 500;
     private boolean stopRunnable = false;         
 
     public AudioPlayer(CordovaPluginAudioPlaylist link) {
@@ -61,8 +70,10 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         if (this.playIndex == index) {
             this.resumePlaying();
         } else {
+            this.endProgressTimer();
+            this.state = STATE.READY;
             this.playIndex = index;
-            this.startPlaying(this.queueItems[index]);
+            this.startPlaying(this.queuedItems.get(index));
         }
     }
 
@@ -89,6 +100,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             this.player.pause();
             this.endProgressTimer();
             this.player.seekTo(0);
+            this.player.release();
             this.setState(STATE.READY);
         }
     }
@@ -99,11 +111,11 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void playNext() {
-        this.play(this.playIndex++);
+        this.play(this.playIndex + 1);
     }
 
     public void playPrevious() {
-        this.play(this.playIndex--);
+        this.play(this.playIndex - 1);
     }
 
     public void replayCurrentItem() {
@@ -112,7 +124,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void resumePlaying() {
-    	this.startPlaying(this.audioFile);
+    	this.startPlaying(this.queuedItems.get(this.playIndex));
     }
 
     public void addItem(String file) {
@@ -123,10 +135,9 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         queuedItems.clear();
     }
 
-    public long getCurrentPosition() {
+    public float getCurrentPosition() {
         if ((this.state == STATE.PLAYING) || (this.state == STATE.PAUSED)) {
-            int curPos = this.player.getCurrentPosition();
-            return curPos;
+            return (this.player.getCurrentPosition() / 1000.0f);
         }
         else {
             return -1;
@@ -189,7 +200,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         return false;
     }
 
-    private boolean setState(STATE inputState) {
+    private void setState(STATE inputState) {
         this.state = inputState;
         this.cordovaLink.updateSongStatus();
     }
@@ -209,8 +220,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     private boolean readyPlayer(String file) {
         switch (this.state) {
-            case STATE.READY:
-            case STATE.FAILED:
+            case READY:
+            case FAILED:
                 if (this.player == null) {
                     this.player = new MediaPlayer();
                     this.player.setOnErrorListener(this);
@@ -223,11 +234,11 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
                     //sendErrorStatus(MEDIA_ERR_ABORTED);
                 }
                 return false;
-            case STATE.LOADING:
+            case LOADING:
                 this.prepareOnly = false;
                 return false;
-            case STATE.PLAYING:
-            case STATE.PAUSED:
+            case PLAYING:
+            case PAUSED:
                 return true;
             default:
                 //sendErrorStatus(MEDIA_ERR_ABORTED);
@@ -247,7 +258,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         } else {
             if (file.startsWith("/android_asset/")) {
                 String f = file.substring(15);
-                android.content.res.AssetFileDescriptor fd = this.handler.cordova.getActivity().getAssets().openFd(f);
+                android.content.res.AssetFileDescriptor fd = this.cordovaLink.cordova.getActivity().getAssets().openFd(f);
                 this.player.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
             }
             else {
@@ -272,23 +283,26 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     private void startProgressTimer() {
-        if (!this.stopRunnable && this.progressRunnable != null) {
+        if (this.stopRunnable == false && this.progressRunnable != null) {
             return;
         }
 
         this.stopRunnable = false;
         
         if (this.progressRunnable == null) {
+
             this.progressRunnable = new Runnable() {
                 @Override
                 public void run() {
                     cordovaLink.updateSongStatus();
 
-                    if (!this.stopRunnable) {
+                    if (stopRunnable == false) {
                         progressTimerHandler.postDelayed(this, progressTimerInterval);
                     }
                 }
             };
+
+            this.progressTimerHandler.post(this.progressRunnable);
         } else {
             this.progressTimerHandler.postDelayed(this.progressRunnable, progressTimerInterval);
         }

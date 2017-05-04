@@ -29,7 +29,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
                         PLAYING,
                         FAILED,
                         PAUSED,
-                        LOADING
+                        LOADING,
+                        ENDED
                       };
 
     public MediaPlayer player = null;
@@ -165,6 +166,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     public void onCompletion(MediaPlayer player) {
         if (this.playIndex >= queuedItems.size()-1) {
             this.stop();
+            this.setState(STATE.ENDED);
         } else {
             this.playNext();
         }

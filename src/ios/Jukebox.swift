@@ -208,6 +208,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
         case paused
         case loading
         case failed
+        case ended
         
         public var description: String {
             get{
@@ -223,7 +224,8 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
                     return "Paused"
                 case .loading:
                     return "Loading"
-                    
+                case .ended:
+                    return "Ended"    
                 }
             }
         }
@@ -500,6 +502,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func playerItemDidPlayToEnd(_ notification : Notification){
         if playIndex >= queuedItems.count - 1 {
             stop()
+            state = .ended
         } else {
             play(atIndex: playIndex + 1)
         }

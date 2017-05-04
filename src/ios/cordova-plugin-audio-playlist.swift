@@ -284,6 +284,9 @@ import MediaPlayer
         case .loading:
             output["state"] = "loading"
             break
+        case .ended:
+            output["state"] = "ended"
+            break
         }
 
         return output

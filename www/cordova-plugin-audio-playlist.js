@@ -109,6 +109,10 @@ exports.getPlaylistOffline = function(playlistId) {
     return audioPlugin.localForage.getItem("playlist-" + playlistId);
 }
 
+exports.syncPlaylistOffline = function(playlistFromServer) {
+    return downloadPlaylist(playlist);
+}
+
 exports.downloadTrack = function(track) {
     return downloadTrack(track);
 }
@@ -117,7 +121,7 @@ function downloadPlaylist(playlist) {
     return new Promise(function(resolve, reject) {
         audioPlugin.localForage.getItem("playlist-" + playlist.id).then(function(result) {
             if (result !== null) {
-                playlist = result;
+                playlist = syncPlaylists(playlist, result);
             }
 
             Promise.all(
@@ -182,6 +186,47 @@ function downloadTrack(track) {
             reject(onErrorFs);
         });
     });
+}
+
+/**
+ * Syncs an incoming playlist from server with saved playlist on device.
+ * 
+ * @param {any} inputPlaylist 
+ * @param {any} savedPlaylist 
+ * @returns 
+ */
+function syncPlaylists(inputPlaylist, savedPlaylist) {
+    var mergedSongList = syncSongLists(inputPlaylist.songs, savedPlaylist.songs);
+
+    var output = extend(savedPlaylist, inputPlaylist, true);
+    output.songs = mergedSongList;
+
+    return output;
+}
+
+/**
+ * Syncs song lists to ensure already downloaded songs not downloaded again.
+ * 
+ * @param {any} inputSongs 
+ * @param {any} savedSongs 
+ * @returns 
+ */
+function syncSongLists(inputSongs, savedSongs) {
+    var lookup = {};
+
+    // Create lookup object for faster matching.
+    savedSongs.forEach(function(song) {
+        lookup[song.id] = song;
+    });
+
+    inputSongs.forEach(function(song, index) {
+        if (lookup.hasOwnProperty(song.id)) {
+            var savedMatch = lookup[song.id];
+            song = extend(song, savedMatch, false);
+        }
+    });
+
+    return inputSongs;
 }
 
 function execPromise(success, error, pluginName, method, args) {

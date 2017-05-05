@@ -325,7 +325,7 @@ import MediaPlayer
             switch jukebox.state {
             case .playing, .loading:
                 break
-            case .paused, .failed, .ready:
+            case .paused, .ended, .failed, .ready:
                 break
             }
         }

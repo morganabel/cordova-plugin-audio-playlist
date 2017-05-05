@@ -136,6 +136,18 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         queuedItems.clear();
     }
 
+    public Integer getPlayIndex() {
+        return this.playIndex;
+    }
+
+    public boolean isLastTrack() {
+        if (this.playIndex >= queuedItems.size()-1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public float getCurrentPosition() {
         if ((this.state == STATE.PLAYING) || (this.state == STATE.PAUSED)) {
             return (this.player.getCurrentPosition() / 1000.0f);

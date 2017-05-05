@@ -7,6 +7,8 @@ var downloadStatus = {
     FAILED: 3
 }
 
+var tracks = [];
+
 exports.initAudio = function(success, error) {
     audioPlugin.localForage.config({
         name: 'cordovaAudioPlaylists'
@@ -16,11 +18,32 @@ exports.initAudio = function(success, error) {
 };
 
 exports.clearPlaylist = function(success, error) {
+    tracks = [];
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "clear", []);
+}
+
+exports.getCurrentTrack = function(success, error) {
+    return new Promise(function(resolve, reject) {
+        execPromise(success, error, "CordovaPluginAudioPlaylist", "getPlayIndex", []).then((index) => {
+            resolve(tracks[index]);
+        }).catch((err) => {
+            reject(reject);
+        });
+    });
+}
+
+exports.getTracks = function() {
+    return tracks;
+}
+
+exports.isLastTrack = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "isLastTrack", []);
 }
 
 exports.addItem = function(arg0, success, error) {
     if (arg0 instanceof Object && arg0.hasOwnProperty("id") && arg0.hasOwnProperty("url")) {
+        tracks.push(arg0);
+
         return audioPlugin.localForage.getItem("track-url-" + arg0.id).then(function(result) {
             if (null !== result) {
                 arg0.url = result;
@@ -39,6 +62,8 @@ exports.addManyItems = function(arg0, success, error) {
     if (Array.isArray(arg0)) {
         return Promise.all(arg0.map(
             function(track) {
+                tracks.push(track);
+
                 return audioPlugin.localForage.getItem("track-url-" + track.id).then(function(result) {
                     if (null !== result) {
                         track.url = result;

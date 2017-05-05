@@ -126,6 +126,21 @@ extension Jukebox {
         guard playerOperational else {return}
         seek(toSecond: 0, shouldPlay: true)
     }
+
+    /**
+     Checks if the current track is the last track.
+     */
+    public func isLastTrack() -> Bool {
+        if playIndex >= queuedItems.count - 1 {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public func getPlayIndex() -> Int {
+        return playIndex
+    }
     
     /**
      Seeks to a certain second within the current AVPlayerItem and starts playing

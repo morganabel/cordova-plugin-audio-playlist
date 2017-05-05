@@ -69,6 +69,12 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             this.stop();
         } else if (action.equals("loop")) {
             this.loop();
+        } else if (action.equals("getPlayIndex")) {
+            callbackContext.sendPluginResult(new PluginResult(status, this.audioPlayer.getPlayIndex()));
+            return true;
+        } else if (action.equals("isLastTrack")) {
+            callbackContext.sendPluginResult(new PluginResult(status, this.audioPlayer.isLastTrack()));
+            return true;
         } else {
             return false;
         }

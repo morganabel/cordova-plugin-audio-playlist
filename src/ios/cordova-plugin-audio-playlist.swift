@@ -55,6 +55,44 @@ import MediaPlayer
         )
     }
 
+    @objc(getPlayIndex:)
+    func getPlayIndex(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        var result = jukebox.getPlayIndex();
+
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: result
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
+    @objc(isLastTrack:)
+    func isLastTrack(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        var result = jukebox.isLastTrack();
+
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: result
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
     @objc(addItem:)
     func addItem(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(

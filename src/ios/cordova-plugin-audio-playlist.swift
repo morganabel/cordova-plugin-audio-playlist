@@ -305,6 +305,7 @@ import MediaPlayer
         output["currentTime"] = item?.currentTime ?? 0
         output["title"] = item?.meta.title ?? ""
         output["playIndex"] = jukebox.playIndex
+        output["isLastTrack"] = jukebox.isLastTrack()
 
         switch jukebox.state {
         case .ready:

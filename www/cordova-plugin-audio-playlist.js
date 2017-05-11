@@ -91,6 +91,10 @@ exports.pause = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "pause", []);
 };
 
+exports.toggle = function(success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "toggle", []);
+}
+
 exports.next = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "next", []);
 }

@@ -366,6 +366,8 @@ import MediaPlayer
                 break
             case .paused, .ended, .failed, .ready:
                 break
+            default:
+                break
             }
         }
 

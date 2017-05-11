@@ -165,7 +165,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             output.put("currentTime", this.audioPlayer.getCurrentPosition());
             output.put("playIndex", this.audioPlayer.playIndex);
             output.put("state", this.audioPlayer.state.toString().toLowerCase());
-            output.put("isLastTrack", this.audioPlayer.isLastTrack())
+            output.put("isLastTrack", this.audioPlayer.isLastTrack());
         } catch (JSONException e) {
             
         }

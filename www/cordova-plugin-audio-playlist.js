@@ -145,6 +145,11 @@ exports.getPlaylistOffline = function(playlistId) {
     return audioPlugin.localForage.getItem("playlist-" + playlistId);
 }
 
+exports.removePlaylistOffline = function(playlistId) {
+    // TODO: Actually delete stored tracks.
+    return audioPlugin.localForage.removeItem("playlist-" + playlistId);
+}
+
 exports.syncPlaylistOffline = function(playlistFromServer) {
     return downloadPlaylist(playlist);
 }
@@ -199,8 +204,6 @@ function downloadTrack(track) {
 
             // Parameters passed to getFile create a new file or return the file if it already exists.
             dirEntry.getFile(track.id + '.mp3', { create: true, exclusive: false }, function (fileEntry) {
-                console.log(fileEntry.nativeURL);
-
                 fileTransfer.download(
                     uri,
                     fileEntry.nativeURL,

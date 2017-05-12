@@ -7,6 +7,7 @@ var downloadStatus = {
     FAILED: 3
 }
 
+var isInit = false;
 var tracks = [];
 
 exports.initAudio = function(success, error) {
@@ -14,8 +15,14 @@ exports.initAudio = function(success, error) {
         name: 'cordovaAudioPlaylists'
     });
 
+    isInit = true;
+
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);
 };
+
+exports.isInit = function() {
+    return isInit;
+}
 
 exports.clearPlaylist = function(success, error) {
     tracks = [];

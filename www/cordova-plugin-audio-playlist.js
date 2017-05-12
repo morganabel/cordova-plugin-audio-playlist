@@ -19,7 +19,7 @@ exports.initAudio = function(success, error) {
 
 exports.clearPlaylist = function(success, error) {
     tracks = [];
-    return execPromise(success, error, "CordovaPluginAudioPlaylist", "clear", []);
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "clearPlaylist", []);
 }
 
 exports.getCurrentTrack = function(success, error) {

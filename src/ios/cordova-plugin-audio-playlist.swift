@@ -43,6 +43,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
+        jukebox.stop();
         jukebox.removeAllItems();
 
         pluginResult = CDVPluginResult(

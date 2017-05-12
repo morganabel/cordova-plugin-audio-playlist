@@ -154,6 +154,14 @@ exports.syncPlaylistOffline = function(playlistFromServer) {
     return downloadPlaylist(playlist);
 }
 
+exports.resumeDownload = function(playlistId) {
+    return audioPlugin.localForage.getItem("playlist-" + playlistId).then((playlist) => {
+        if (!isEmpty(playlist)) {
+            downloadPlaylist(playlist);
+        }
+    })
+};
+
 exports.downloadTrack = function(track) {
     return downloadTrack(track);
 }

@@ -176,6 +176,30 @@ exports.getPlaylistOffline = function(playlistId) {
     return audioPlugin.localForage.getItem(playlistPrefix + playlistId);
 }
 
+exports.getAllPlaylistsOffline = function() {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
+    return new Promise(function(resolve, reject) {
+        getPlaylistLookupAsync().then(function() {
+            var promiseArray = [];
+
+            for(var prop in playlistIdLookup) {
+                promiseArray.push(audioPlugin.localForage.getItem(playlistPrefix + prop));
+            }
+
+            Promise.all(promiseArray).then(function(results) {
+                resolve(results);
+            }).catch(function(err) {
+                reject(err);
+            });
+        }).catch(function(err) {
+            reject(err);
+        });
+    });
+}
+
 exports.removePlaylistOffline = function(playlistId) {
     if (!localForageInit) {
         configureLocalForage();

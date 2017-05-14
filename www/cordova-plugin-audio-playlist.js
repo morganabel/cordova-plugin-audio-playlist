@@ -303,6 +303,8 @@ function getPlaylistLookupAsync() {
         if (isEmpty(getIdsPromise)) {
             getIdsPromise = new Promise(function(resolve, reject) {
                 audioPlugin.localForage.keys().then(function(keys) {
+                    playlistIdLookup = {};
+
                     keys.forEach(function(key) {
                         if (key.lastIndexOf(playlistPrefix, 0) === 0) {
                             playlistIdLookup[key.substring(playlistPrefix.length)] = true;

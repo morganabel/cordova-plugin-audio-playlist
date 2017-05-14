@@ -7,8 +7,12 @@ var downloadStatus = {
     FAILED: 3
 }
 
+var playlistPrefix = "playlist-";
+
 var isInit = false;
 var tracks = [];
+var playlistIdLookup = null;
+var getIdsPromise = null;
 
 exports.initAudio = function(success, error) {
     audioPlugin.localForage.config({
@@ -122,6 +126,16 @@ exports.watch = function(successCallback, error) {
     return exec(successCallback, error, "CordovaPluginAudioPlaylist", "watch", [])
 }
 
+exports.isPlaylistSaved = function(playlistId) {
+    return new Promise(function(resolve, reject) {
+        getPlaylistLookupAsync().then(function(success) {
+            resolve(playlistIdLookup.hasOwnProperty(playlistId));
+        }).catch(function(err) {
+            reject(err);
+        });
+    });
+}
+
 exports.savePlaylistOffline = function(inputPlaylist) {
     var playlist =  {
         id: "",
@@ -136,18 +150,26 @@ exports.savePlaylistOffline = function(inputPlaylist) {
         song.downloadStatus = downloadStatus.NONE;
     });
 
-    return audioPlugin.localForage.setItem("playlist-" + playlist.id, playlist).then(function() {
+    return audioPlugin.localForage.setItem(playlistPrefix + playlist.id, playlist).then(function() {
+        if (!isEmpty(playlistIdLookup)) {
+            playlistIdLookup[playlist.id] = true;
+        }
+
         downloadPlaylist(playlist);
     });
 }
 
 exports.getPlaylistOffline = function(playlistId) {
-    return audioPlugin.localForage.getItem("playlist-" + playlistId);
+    return audioPlugin.localForage.getItem(playlistPrefix + playlistId);
 }
 
 exports.removePlaylistOffline = function(playlistId) {
     // TODO: Actually delete stored tracks.
-    return audioPlugin.localForage.removeItem("playlist-" + playlistId);
+    return audioPlugin.localForage.removeItem(playlistPrefix + playlistId).then(function() {
+        if (!isEmpty(playlistIdLookup)) {
+            delete playlistIdLookup[playlistId];
+        }
+    });
 }
 
 exports.syncPlaylistOffline = function(playlistFromServer) {
@@ -155,7 +177,7 @@ exports.syncPlaylistOffline = function(playlistFromServer) {
 }
 
 exports.resumeDownload = function(playlistId) {
-    return audioPlugin.localForage.getItem("playlist-" + playlistId).then((playlist) => {
+    return audioPlugin.localForage.getItem(playlistPrefix + playlistId).then((playlist) => {
         if (!isEmpty(playlist)) {
             downloadPlaylist(playlist);
         }
@@ -168,7 +190,7 @@ exports.downloadTrack = function(track) {
 
 function downloadPlaylist(playlist) {
     return new Promise(function(resolve, reject) {
-        audioPlugin.localForage.getItem("playlist-" + playlist.id).then(function(result) {
+        audioPlugin.localForage.getItem(playlistPrefix + playlist.id).then(function(result) {
             if (result !== null) {
                 playlist = syncPlaylists(playlist, result);
             }
@@ -192,7 +214,7 @@ function downloadPlaylist(playlist) {
                 })
             ).then(function(allSuccess) {
                 playlist.downloadStatus = downloadStatus.DONE;
-                audioPlugin.localForage.setItem("playlist-" + playlist.id, playlist).then(function() {
+                audioPlugin.localForage.setItem(playlistPrefix + playlist.id, playlist).then(function() {
                     resolve(playlist);
                 }).catch(function(saveErr) {
                     reject(saveErr);
@@ -274,6 +296,30 @@ function syncSongLists(inputSongs, savedSongs) {
     });
 
     return inputSongs;
+}
+
+function getPlaylistLookupAsync() {
+    if (isEmpty(playlistIdLookup)) {
+        if (isEmpty(getIdsPromise)) {
+            getIdsPromise = new Promise(function(resolve, reject) {
+                audioPlugin.localForage.keys().then(function(keys) {
+                    keys.forEach(function(key) {
+                        if (key.lastIndexOf(playlistPrefix, 0) === 0) {
+                            playlistIdLookup[key.substring(playlistPrefix.length)] = true;
+                        }
+                    });
+
+                    resolve(playlistIdLookup);
+                }).catch(function(err) {
+                    reject(err);
+                });
+            });
+        }
+
+        return getIdsPromise;
+    } else {
+        return Promise.resolve(playlistIdLookup);
+    }
 }
 
 function execPromise(success, error, pluginName, method, args) {

@@ -135,6 +135,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     public void removeAllItems() {
         queuedItems.clear();
         this.playIndex = 0;
+        this.player = null;
+        this.prepareOnly = true;
     }
 
     public Integer getPlayIndex() {

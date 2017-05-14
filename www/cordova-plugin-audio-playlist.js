@@ -14,11 +14,12 @@ var tracks = [];
 var playlistIdLookup = null;
 var getIdsPromise = null;
 
-exports.initAudio = function(success, error) {
-    audioPlugin.localForage.config({
-        name: 'cordovaAudioPlaylists'
-    });
+// Configure local forage.
+audioPlugin.localForage.config({
+    name: 'cordovaAudioPlaylists'
+});
 
+exports.initAudio = function(success, error) {
     isInit = true;
 
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);

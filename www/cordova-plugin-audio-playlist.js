@@ -10,16 +10,16 @@ var downloadStatus = {
 var playlistPrefix = "playlist-";
 
 var isInit = false;
+var localForageInit = false;
 var tracks = [];
 var playlistIdLookup = null;
 var getIdsPromise = null;
 
-// Configure local forage.
-audioPlugin.localForage.config({
-    name: 'cordovaAudioPlaylists'
-});
-
 exports.initAudio = function(success, error) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     isInit = true;
 
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);
@@ -128,6 +128,10 @@ exports.watch = function(successCallback, error) {
 }
 
 exports.isPlaylistSaved = function(playlistId) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     return new Promise(function(resolve, reject) {
         getPlaylistLookupAsync().then(function(success) {
             resolve(playlistIdLookup.hasOwnProperty(playlistId));
@@ -138,6 +142,10 @@ exports.isPlaylistSaved = function(playlistId) {
 }
 
 exports.savePlaylistOffline = function(inputPlaylist) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     var playlist =  {
         id: "",
         title: "",
@@ -161,10 +169,18 @@ exports.savePlaylistOffline = function(inputPlaylist) {
 }
 
 exports.getPlaylistOffline = function(playlistId) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     return audioPlugin.localForage.getItem(playlistPrefix + playlistId);
 }
 
 exports.removePlaylistOffline = function(playlistId) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     // TODO: Actually delete stored tracks.
     return audioPlugin.localForage.removeItem(playlistPrefix + playlistId).then(function() {
         if (!isEmpty(playlistIdLookup)) {
@@ -174,10 +190,18 @@ exports.removePlaylistOffline = function(playlistId) {
 }
 
 exports.syncPlaylistOffline = function(playlistFromServer) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     return downloadPlaylist(playlist);
 }
 
 exports.resumeDownload = function(playlistId) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     return audioPlugin.localForage.getItem(playlistPrefix + playlistId).then((playlist) => {
         if (!isEmpty(playlist)) {
             downloadPlaylist(playlist);
@@ -186,6 +210,10 @@ exports.resumeDownload = function(playlistId) {
 };
 
 exports.downloadTrack = function(track) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
     return downloadTrack(track);
 }
 
@@ -323,6 +351,15 @@ function getPlaylistLookupAsync() {
     } else {
         return Promise.resolve(playlistIdLookup);
     }
+}
+
+function configureLocalForage() {
+    // Configure local forage.
+    audioPlugin.localForage.config({
+        name: 'cordovaAudioPlaylists'
+    });
+
+    localForageInit = true;
 }
 
 function execPromise(success, error, pluginName, method, args) {

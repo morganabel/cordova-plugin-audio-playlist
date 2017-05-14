@@ -209,6 +209,7 @@ extension Jukebox {
      */
     public func removeAllItems(){
         queuedItems.removeAll(keepingCapacity: true)
+        playIndex = 0
     }
 }
 

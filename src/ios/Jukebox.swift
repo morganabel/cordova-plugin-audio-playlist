@@ -132,9 +132,20 @@ extension Jukebox {
      */
     public func isLastTrack() -> Bool {
         if playIndex >= queuedItems.count - 1 {
-            return true;
+            return true
         } else {
-            return false;
+            return false
+        }
+    }
+
+    /**
+    Checks if playlist currently empty.
+    */
+    public func isEmpty() -> Bool {
+        if (queuedItems != nil && queuedItems.count > 0) {
+            return false
+        } else {
+            return true
         }
     }
 

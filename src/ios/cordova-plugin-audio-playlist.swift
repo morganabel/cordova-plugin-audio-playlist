@@ -295,7 +295,9 @@ import MediaPlayer
             builder.album = album
         })
 
-        jukebox.append(item: item, loadingAssets: true)
+        let shouldLoadAssets = jukebox.isEmpty()
+
+        jukebox.append(item: item, loadingAssets: shouldLoadAssets)
     }
 
     func getCurrentSongStatus() -> [String:Any] {

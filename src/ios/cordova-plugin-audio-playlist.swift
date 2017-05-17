@@ -62,7 +62,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        var result = jukebox.getPlayIndex();
+        let result = jukebox.getPlayIndex();
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK,
@@ -81,7 +81,7 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        var result = jukebox.isLastTrack();
+        let result = jukebox.isLastTrack();
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK,
@@ -101,7 +101,7 @@ import MediaPlayer
         )
 
         let data = JSON(command.arguments[0]);
-        var autoPlay = data["autoPlay"].bool ?? false
+        let autoPlay = data["autoPlay"].bool ?? false
         
         doAddItem(data);
 
@@ -279,9 +279,9 @@ import MediaPlayer
         
 
         var image: UIImage? = nil
-        var imageURL = URL(string: cover)
+        let imageURL = URL(string: cover)
         do {
-            var imageData = try Data(contentsOf: imageURL!)
+            let imageData = try Data(contentsOf: imageURL!)
             image = UIImage(data: imageData)
         } catch {
             print("error occurred loading image.\n \(error)")

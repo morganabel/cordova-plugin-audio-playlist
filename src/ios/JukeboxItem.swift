@@ -27,6 +27,7 @@ import MediaPlayer
 
 protocol JukeboxItemDelegate : class {
     func jukeboxItemDidLoadPlayerItem(_ item: JukeboxItem)
+    func jukeboxItemReadyToPlay(_ item: JukeboxItem)
     func jukeboxItemDidUpdate(_ item: JukeboxItem)
     func jukeboxItemDidFail(_ item: JukeboxItem)
 }
@@ -95,6 +96,29 @@ open class JukeboxItem: NSObject {
             }
             scheduleNotification()
         }
+
+        if keyPath == #keyPath(AVPlayerItem.status) && context == &playerItemContext {
+            let status: AVPlayerItemStatus
+            
+            // Get the status change from the change dictionary
+            if let statusNumber = change?[.newKey] as? NSNumber {
+                status = AVPlayerItemStatus(rawValue: statusNumber.intValue)!
+            } else {
+                status = .unknown
+            }
+            
+            // Switch over the status
+            switch status {
+            case .readyToPlay:
+                // Player item is ready to play.
+                delegate?.jukeboxItemReadyToPlay(self)
+                break
+            case .failed:
+                // Player item failed. See error.
+            case .unknown:
+                // Player item is not yet ready.
+            }
+        }
     }
     
     deinit {
@@ -126,9 +150,18 @@ open class JukeboxItem: NSObject {
     }
     
     func refreshPlayerItem(withAsset asset: AVAsset) {
+        // Removed any existing observers.
         playerItem?.removeObserver(self, forKeyPath: observedValue)
+        playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
+
+        // Create player item with asset.
         playerItem = AVPlayerItem(asset: asset)
+
+        // Add observers for metadata and item status, respectively.
         playerItem?.addObserver(self, forKeyPath: observedValue, options: NSKeyValueObservingOptions.new, context: nil)
+        playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.old, .new], context: &playerItemContext)
+
+        // Update metadata.
         update()
     }
     

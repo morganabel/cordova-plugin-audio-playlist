@@ -346,6 +346,10 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
         registerForPlayToEndNotification(withItem: playItem)
         startNewPlayer(forItem: playItem)
     }
+
+    func jukeboxItemReadyToPlay(_ item: JukeboxItem) {
+        play()
+    }
     
     // MARK:- Private methods -
     

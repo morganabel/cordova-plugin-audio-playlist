@@ -97,7 +97,7 @@ open class JukeboxItem: NSObject {
             scheduleNotification()
         }
 
-        if keyPath == #keyPath(AVPlayerItem.status) && context == &playerItemContext {
+        if keyPath == #keyPath(AVPlayerItem.status) {
             let status: AVPlayerItemStatus
             
             // Get the status change from the change dictionary
@@ -111,11 +111,11 @@ open class JukeboxItem: NSObject {
             switch status {
             case .readyToPlay:
                 // Player item is ready to play.
-                delegate?.jukeboxItemReadyToPlay(self)
+                self.delegate?.jukeboxItemReadyToPlay(self)
                 break
-            case .failed:
+            case .failed: break
                 // Player item failed. See error.
-            case .unknown:
+            case .unknown: break
                 // Player item is not yet ready.
             }
         }
@@ -159,7 +159,7 @@ open class JukeboxItem: NSObject {
 
         // Add observers for metadata and item status, respectively.
         playerItem?.addObserver(self, forKeyPath: observedValue, options: NSKeyValueObservingOptions.new, context: nil)
-        playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.old, .new], context: &playerItemContext)
+        playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.old, .new], context: nil)
 
         // Update metadata.
         update()

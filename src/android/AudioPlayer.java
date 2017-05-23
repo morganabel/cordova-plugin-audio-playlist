@@ -39,6 +39,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     public boolean prepareOnly = true; 
     public Integer playIndex = 0;  
     public List<String> queuedItems = new ArrayList();
+    public List<String> queuedTitles = new ArrayList();
 
     private CordovaPluginAudioPlaylist cordovaLink = null;
     private Handler progressTimerHandler = new Handler();
@@ -129,11 +130,17 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void addItem(String file) {
+        this.addItem(file, "");
+    }
+
+    public void addItem(String file, String title) {
         queuedItems.add(file);
+        queuedTitles.add(title);
     }
 
     public void removeAllItems() {
         queuedItems.clear();
+        queuedTitles.clear();
         this.player.pause();
         this.player.release();
         this.playIndex = 0;
@@ -169,6 +176,10 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         }
 
         return 0;
+    }
+
+    public String getCurrentTrackTitle() {
+        return queuedTitles.get(this.playIndex);
     }
 
     public boolean isRemoteAudio(String file) {

@@ -110,7 +110,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private void addItem(JSONObject track) {
         try {
             String url = track.getString("url");
-            this.audioPlayer.addItem(this.stripFileProtocol(url));
+            this.audioPlayer.addItem(this.stripFileProtocol(url), track.getString("title"));
 
             if (track.getBoolean("autoPlay") && this.audioPlayer.state != STATE.PLAYING) {
                 this.audioPlayer.play();
@@ -165,6 +165,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             output.put("duration", this.audioPlayer.getDuration());
             output.put("currentTime", this.audioPlayer.getCurrentPosition());
             output.put("playIndex", this.audioPlayer.playIndex);
+            output.put("title", this.audioPlayer.getCurrentTrackTitle());
             output.put("state", this.audioPlayer.state.toString().toLowerCase());
             output.put("isLastTrack", this.audioPlayer.isLastTrack());
         } catch (JSONException e) {

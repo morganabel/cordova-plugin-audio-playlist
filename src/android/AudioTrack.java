@@ -21,8 +21,8 @@ public class AudioTrack {
 
     public AudioTrack(JSONObject track) {
         try {
-            String url = track.getString("url");
-            url = this.stripFileProtocol(url);
+            String inputUrl = track.getString("url");
+            url = this.stripFileProtocol(inputUrl);
 
             id = track.getString("id");
             title = track.getString("title");

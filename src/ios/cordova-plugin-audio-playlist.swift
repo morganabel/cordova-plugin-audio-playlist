@@ -272,6 +272,7 @@ import MediaPlayer
     }
 
     func doAddItem(_ data: JSON) {
+        let id = data["id"].stringValue
         let title = data["title"].stringValue
         let artist = data["artist"].stringValue
         let album = data["album"].stringValue
@@ -287,7 +288,7 @@ import MediaPlayer
             print("error occurred loading image.\n \(error)")
         }
 
-        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!)
+        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!, localTitle: nil, id: data["id"].stringValue)
         item.customMetaBuilder = JukeboxItem.MetaBuilder({ (builder) in
             builder.title = title
             builder.artist = artist
@@ -304,6 +305,7 @@ import MediaPlayer
         let item = jukebox.currentItem;
 
         var output = [String:Any]()
+        output["trackId"] = item?.localId ?? ""
         output["duration"] = item?.meta.duration ?? 0
         output["currentTime"] = item?.currentTime ?? 0
         output["title"] = item?.meta.title ?? ""

@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.mabel.plugins.CordovaPluginAudioPlaylist;
+import com.mabel.plugins.AudioTrack;
 
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -38,8 +39,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     public float duration = -1;    
     public boolean prepareOnly = true; 
     public Integer playIndex = 0;  
-    public List<String> queuedItems = new ArrayList();
-    public List<String> queuedTitles = new ArrayList();
+    public List<AudioTrack> queuedItems = new ArrayList();
 
     private CordovaPluginAudioPlaylist cordovaLink = null;
     private Handler progressTimerHandler = new Handler();
@@ -75,7 +75,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             this.endProgressTimer();
             this.state = STATE.READY;
             this.playIndex = index;
-            this.startPlaying(this.queuedItems.get(index));
+            this.startPlaying(this.queuedItems.get(index).url);
         }
     }
 
@@ -126,26 +126,25 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void resumePlaying() {
-    	this.startPlaying(this.queuedItems.get(this.playIndex));
+    	this.startPlaying(this.queuedItems.get(this.playIndex).url);
     }
 
-    public void addItem(String file) {
-        this.addItem(file, "");
-    }
-
-    public void addItem(String file, String title) {
-        queuedItems.add(file);
-        queuedTitles.add(title);
+    public void addItem(JSONObject object) {
+        AudioTrack track = new AudioTrack(object);
+        queuedItems.add(track);
     }
 
     public void removeAllItems() {
         queuedItems.clear();
-        queuedTitles.clear();
         this.player.pause();
         this.player.release();
         this.playIndex = 0;
         this.player = null;
         this.prepareOnly = true;
+    }
+
+    public String getCurrentTrackId() {
+        return queuedItems.get(this.playIndex).id;
     }
 
     public Integer getPlayIndex() {
@@ -179,7 +178,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public String getCurrentTrackTitle() {
-        return queuedTitles.get(this.playIndex);
+        return queuedItems.get(this.playIndex).title;
     }
 
     public boolean isRemoteAudio(String file) {

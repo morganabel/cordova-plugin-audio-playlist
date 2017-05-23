@@ -23,6 +23,7 @@
         </js-module>
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioPlayer.java" target-dir="src/com/mabel/plugins" />
+        <source-file src="src/android/AudioTrack.java" target-dir="src/com/mabel/plugins" />
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">

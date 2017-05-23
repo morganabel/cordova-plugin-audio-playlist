@@ -109,8 +109,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     private void addItem(JSONObject track) {
         try {
-            String url = track.getString("url");
-            this.audioPlayer.addItem(this.stripFileProtocol(url), track.getString("title"));
+            this.audioPlayer.addItem(track);
 
             if (track.getBoolean("autoPlay") && this.audioPlayer.state != STATE.PLAYING) {
                 this.audioPlayer.play();
@@ -162,6 +161,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         JSONObject output = new JSONObject();
 
         try {
+            output.put("trackId", this.audioPlayer.getCurrentTrackId());
             output.put("duration", this.audioPlayer.getDuration());
             output.put("currentTime", this.audioPlayer.getCurrentPosition());
             output.put("playIndex", this.audioPlayer.playIndex);
@@ -173,12 +173,5 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         }
 
         return output;
-    }
-
-    private String stripFileProtocol(String uriString) {
-        if (uriString.startsWith("file://")) {
-            return Uri.parse(uriString).getPath();
-        }
-        return uriString;
     }
 }

@@ -20,13 +20,17 @@ public class AudioTrack {
     public String url = "";
 
     public AudioTrack(JSONObject track) {
-        String url = track.getString("url");
-        url = this.stripFileProtocol(url);
+        try {
+            String url = track.getString("url");
+            url = this.stripFileProtocol(url);
 
-        id = track.getString("id");
-        title = track.getString("title");
-        album = track.getString("album");
-        artist = track.getString("artist");
+            id = track.getString("id");
+            title = track.getString("title");
+            album = track.getString("album");
+            artist = track.getString("artist");
+        } catch (JSONException e) {
+            
+        }
     }
 
     private String stripFileProtocol(String uriString) {

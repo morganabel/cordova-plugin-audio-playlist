@@ -43,8 +43,12 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
+        // Stop and deinitialize playlist.
         jukebox.stop();
         jukebox.removeAllItems();
+        jukebox = nil
+
+        jukebox = Jukebox(delegate: self, items: [])!
 
         pluginResult = CDVPluginResult(
             status: CDVCommandStatus_OK

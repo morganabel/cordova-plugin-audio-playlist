@@ -338,7 +338,9 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     
     func jukeboxItemDidLoadPlayerItem(_ item: JukeboxItem) {
         delegate?.jukeboxDidLoadItem(self, item: item)
-        let index = queuedItems.index{$0 === item}
+        let index = queuedItems.index(where: { (jukeBoxItem) -> Bool in
+            jukeboxItem.identifier == item.identifier
+        })
         
         guard let playItem = item.playerItem
             , state == .loading && playIndex == index else {return}

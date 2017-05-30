@@ -35,12 +35,11 @@ protocol JukeboxItemDelegate : class {
 open class JukeboxItem: NSObject {
     
     // MARK:- Properties -
-    
-    let identifier: String
     fileprivate var didLoad = false
     
     var delegate: JukeboxItemDelegate?
     
+    open var identifier: String
     open var localId: String?
     open var localTitle: String?
     open let URL: Foundation.URL

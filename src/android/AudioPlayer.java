@@ -226,6 +226,9 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         // Send error notification to JavaScript
         //sendErrorStatus(arg1);
 
+        // Send error to cordova.
+        this.cordovaLink.notifyOnError();
+
         return false;
     }
 

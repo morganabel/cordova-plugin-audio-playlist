@@ -32,6 +32,7 @@ public protocol JukeboxDelegate: class {
     func jukeboxPlaybackProgressDidChange(_ jukebox : Jukebox)
     func jukeboxDidLoadItem(_ jukebox : Jukebox, item : JukeboxItem)
     func jukeboxDidUpdateMetadata(_ jukebox : Jukebox, forItem: JukeboxItem)
+    func jukeboxError(_ jukebox : Jukebox, item: JukeboxItem)
 }
 
 // MARK: - Public methods extension -
@@ -328,6 +329,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func jukeboxItemDidFail(_ item: JukeboxItem) {
         stop()
         state = .failed
+        self.delegate?.jukeboxError(self, item: item)
     }
     
     func jukeboxItemDidUpdate(_ item: JukeboxItem) {

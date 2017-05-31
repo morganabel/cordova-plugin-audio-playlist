@@ -127,6 +127,10 @@ exports.watch = function(successCallback, error) {
     return exec(successCallback, error, "CordovaPluginAudioPlaylist", "watch", [])
 }
 
+exports.onError = function(callback, error) {
+    return exec(callback, error, "CordovaPluginAudioPlaylist", "onError", [])
+}
+
 exports.isPlaylistSaved = function(playlistId) {
     if (!localForageInit) {
         configureLocalForage();

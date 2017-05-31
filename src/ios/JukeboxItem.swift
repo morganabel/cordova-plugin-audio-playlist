@@ -191,6 +191,13 @@ open class JukeboxItem: NSObject {
                 message += "Item not found at the specified URL: \"\(URL)\""
                 fatalError(message)
             }
+            if error.code == NSURLErrorResourceUnavailable {
+                message += "Item not found at the specified URL: \"\(URL)\""
+                fatalError(message)
+            }
+
+            // Notify of failure.
+            self.delegate?.jukeboxItemDidFail(self)
 
             return false
         }

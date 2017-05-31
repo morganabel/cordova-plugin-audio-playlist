@@ -4,6 +4,7 @@ import MediaPlayer
 @objc(CordovaPluginAudioPlaylist) class CordovaPluginAudioPlaylist : CDVPlugin, JukeboxDelegate {
     var jukebox: Jukebox!
     var callbackId: String? = nil
+    var errorCallbackId: String? = nil
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -275,6 +276,11 @@ import MediaPlayer
         callbackId = command.callbackId
     }
 
+    @objc(onError:)
+    func watch(_ command: CDVInvokedUrlCommand) {
+        errorCallbackId = command.callbackId
+    }
+
     func doAddItem(_ data: JSON) {
         let id = data["id"].stringValue
         let title = data["title"].stringValue
@@ -346,6 +352,15 @@ import MediaPlayer
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
             result!.keepCallback = true
             commandDelegate.send(result, callbackId: self.callbackId)
+        }
+    }
+
+    @objc func notifyOfFailure() {
+        let songData: [String: Any] = getCurrentSongStatus()
+        if errorCallbackId != nil {
+            let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
+            result!.keepCallback = true
+            commandDelegate.send(result, callbackId: self.errorCallbackId)
         }
     }
 

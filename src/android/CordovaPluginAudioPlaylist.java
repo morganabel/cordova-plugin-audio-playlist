@@ -28,6 +28,7 @@ import android.os.Build;
 
 public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private CallbackContext callbackId = null;
+     private CallbackContext errorCallbackId = null;
     private AudioPlayer audioPlayer = null;
 
 
@@ -50,6 +51,9 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             this.clearPlaylist();
         } else if (action.equals("watch")) {
             this.watch(callbackContext);
+            return true;
+        } else if (action.equals("onError")) {
+            this.onError(callbackContext);
             return true;
         } else if (action.equals("addItem")) {
             this.addItem(args.getJSONObject(0));
@@ -94,6 +98,16 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
         }
     }
 
+    public void notifyOnError() {
+        JSONObject message = this.getCurrentSongStatus();
+
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, message);
+        pluginResult.setKeepCallback(true);
+        if (errorCallbackId != null) {
+            errorCallbackId.sendPluginResult(pluginResult);
+        }
+    }
+
     private void initAudio() {
         this.audioPlayer = new AudioPlayer(this);
     }
@@ -105,6 +119,10 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     private void watch(CallbackContext context) {
         this.callbackId = context;
+    }
+
+    private void onError(CallbackContext context) {
+        this.errorCallbackId = context;
     }
 
     private void addItem(JSONObject track) {

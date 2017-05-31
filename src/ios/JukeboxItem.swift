@@ -123,7 +123,7 @@ open class JukeboxItem: NSObject {
     }
     
     deinit {
-        playerItem?.removeObserver(self, forKeyPath: observedValue)
+        removeObservers()
     }
     
     // MARK: - Internal methods -
@@ -152,8 +152,7 @@ open class JukeboxItem: NSObject {
     
     func refreshPlayerItem(withAsset asset: AVAsset) {
         // Removed any existing observers.
-        playerItem?.removeObserver(self, forKeyPath: observedValue)
-        playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
+        removeObservers()
 
         // Create player item with asset.
         playerItem = AVPlayerItem(asset: asset)
@@ -188,6 +187,11 @@ open class JukeboxItem: NSObject {
                 message += "It looks like you're using Xcode 7 and due to an App Transport Security issue (absence of SSL-based HTTP) the asset cannot be loaded from the specified URL: \"\(URL)\".\nTo fix this issue, append the following to your .plist file:\n\n<key>NSAppTransportSecurity</key>\n<dict>\n\t<key>NSAllowsArbitraryLoads</key>\n\t<true/>\n</dict>\n\n"
                 fatalError(message)
             }
+            if error.code == NSNotFound {
+                message += "Item not found at the specified URL: \"\(URL)\""
+                fatalError(message)
+            }
+
             return false
         }
         return true
@@ -236,6 +240,11 @@ open class JukeboxItem: NSObject {
                 })
             }
         }
+    }
+
+    fileprivate func removeObservers() {
+        playerItem?.removeObserver(self, forKeyPath: observedValue)
+        playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
     }
 
     /// Item Metadata

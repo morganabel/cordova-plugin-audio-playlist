@@ -277,7 +277,7 @@ import MediaPlayer
     }
 
     @objc(onError:)
-    func watch(_ command: CDVInvokedUrlCommand) {
+    func onError(_ command: CDVInvokedUrlCommand) {
         errorCallbackId = command.callbackId
     }
 
@@ -311,8 +311,10 @@ import MediaPlayer
         jukebox.append(item: item, loadingAssets: shouldLoadAssets)
     }
 
-    func getCurrentSongStatus() -> [String:Any] {
-        let item = jukebox.currentItem;
+    func getCurrentSongStatus(item: JukeboxItem = nil) -> [String:Any] {
+        if item == nil {
+            item = jukebox.currentItem
+        }
 
         var output = [String:Any]()
         output["trackId"] = item?.localId ?? ""
@@ -355,8 +357,8 @@ import MediaPlayer
         }
     }
 
-    @objc func notifyOfFailure() {
-        let songData: [String: Any] = getCurrentSongStatus()
+    @objc func notifyOfFailure(item: JukeboxItem) {
+        let songData: [String: Any] = getCurrentSongStatus(item: item)
         if errorCallbackId != nil {
             let result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: songData)
             result!.keepCallback = true
@@ -404,6 +406,10 @@ import MediaPlayer
         updateSongStatus()
 
         print("Item updated:\n\(forItem)")
+    }
+
+    func jukeboxError(_ jukebox : Jukebox, item: JukeboxItem) {
+        notifyOfFailure(item: item)
     }
 
     @objc func remoteControlReceived(_ notification: Notification) {

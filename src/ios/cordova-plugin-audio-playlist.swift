@@ -311,10 +311,8 @@ import MediaPlayer
         jukebox.append(item: item, loadingAssets: shouldLoadAssets)
     }
 
-    func getCurrentSongStatus(item: JukeboxItem = nil) -> [String:Any] {
-        if item == nil {
-            item = jukebox.currentItem
-        }
+    func getCurrentSongStatus(item: JukeboxItem? = nil) -> [String:Any] {
+        let item = item ?? jukebox.currentItem
 
         var output = [String:Any]()
         output["trackId"] = item?.localId ?? ""

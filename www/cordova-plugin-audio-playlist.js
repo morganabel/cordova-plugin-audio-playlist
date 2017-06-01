@@ -128,6 +128,10 @@ exports.watch = function(successCallback, error) {
 }
 
 exports.onError = function(callback, error) {
+    // TODO: Consider deleting onError? 
+    // By number of times, error code, etc.
+    // By network status
+
     return exec(callback, error, "CordovaPluginAudioPlaylist", "onError", [])
 }
 

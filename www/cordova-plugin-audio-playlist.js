@@ -249,7 +249,9 @@ exports.downloadTrack = function(track) {
     return downloadTrack(track);
 }
 
-function downloadPlaylist(playlist) {
+function downloadPlaylist(playlist, cache) {
+    if (cache === void 0) { cache = false; }
+
     return new Promise(function(resolve, reject) {
         audioPlugin.localForage.getItem(playlistPrefix + playlist.id).then(function(result) {
             if (result !== null) {
@@ -287,9 +289,11 @@ function downloadPlaylist(playlist) {
     });
 }
 
-function downloadTrack(track) {
+function downloadTrack(track, dataStorageLocation) {
+    if (dataStorageLocation === void 0) { dataStorageLocation = cordova.file.dataDirectory; }
+
     return new Promise(function(resolve, reject) {
-        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function (dirEntry) {
+        window.resolveLocalFileSystemURL(dataStorageLocation, function (dirEntry) {
             var fileTransfer = new FileTransfer();
             var uri = track.url;
 

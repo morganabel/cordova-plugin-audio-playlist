@@ -215,19 +215,21 @@ import MediaPlayer
 
     @objc(next:)
     func next(_ command: CDVInvokedUrlCommand) {
-        var pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_ERROR
-        )
+        self.commandDelegate!.run(inBackground: {() -> Void in
+            var pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_ERROR
+            )
 
-        jukebox.playNext();
-        pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_OK
-        )
+            self.jukebox.playNext();
+            pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_OK
+            )
 
-        self.commandDelegate!.send(
-            pluginResult,
-            callbackId: command.callbackId
-        )
+            self.commandDelegate!.send(
+                pluginResult,
+                callbackId: command.callbackId
+            )
+        })
     }
 
     @objc(previous:)

@@ -46,11 +46,11 @@ import MediaPlayer
             )
 
             // Stop and deinitialize playlist.
-            jukebox.stop();
-            jukebox.removeAllItems();
-            jukebox = nil
+            self.jukebox.stop();
+            self.jukebox.removeAllItems();
+            self.jukebox = nil
 
-            jukebox = Jukebox(delegate: self, items: [])!
+            self.jukebox = Jukebox(delegate: self, items: [])!
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -111,10 +111,10 @@ import MediaPlayer
             let data = JSON(command.arguments[0]);
             let autoPlay = data["autoPlay"].bool ?? false
             
-            doAddItem(data);
+            self.doAddItem(data);
 
             if autoPlay {
-                jukebox.play();
+                self.jukebox.play();
             }
 
             pluginResult = CDVPluginResult(
@@ -139,7 +139,7 @@ import MediaPlayer
 
             for track in tracks {
                 let data = JSON(track)
-                doAddItem(data)
+                self.doAddItem(data)
             }
 
             pluginResult = CDVPluginResult(
@@ -155,41 +155,45 @@ import MediaPlayer
 
     @objc(toggle:)
     func toggle(_ command: CDVInvokedUrlCommand) {
-        var pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_ERROR
-        )
+        self.commandDelegate!.run(inBackground: {() -> Void in
+            var pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_ERROR
+            )
 
-        if jukebox.state == .playing {
-            jukebox.pause()
-        } else {
-            jukebox.play()
-        }
+            if self.jukebox.state == .playing {
+                self.jukebox.pause()
+            } else {
+                self.jukebox.play()
+            }
 
-        pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_OK
-        )
+            pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_OK
+            )
 
-        self.commandDelegate!.send(
-            pluginResult,
-            callbackId: command.callbackId
-        )
+            self.commandDelegate!.send(
+                pluginResult,
+                callbackId: command.callbackId
+            )
+        })
     }
 
     @objc(play:)
     func play(_ command: CDVInvokedUrlCommand) {
-        var pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_ERROR
-        )
+        self.commandDelegate!.run(inBackground: {() -> Void in
+            var pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_ERROR
+            )
 
-        jukebox.play()
-        pluginResult = CDVPluginResult(
-            status: CDVCommandStatus_OK
-        )
+            self.jukebox.play()
+            pluginResult = CDVPluginResult(
+                status: CDVCommandStatus_OK
+            )
 
-        self.commandDelegate!.send(
-            pluginResult,
-            callbackId: command.callbackId
-        )
+            self.commandDelegate!.send(
+                pluginResult,
+                callbackId: command.callbackId
+            )
+        })
     }
 
     @objc(pause:)
@@ -382,7 +386,7 @@ import MediaPlayer
 
         }
 
-        updateSongStatus()
+        //updateSongStatus()
     }
 
     func jukeboxStateDidChange(_ jukebox: Jukebox) {

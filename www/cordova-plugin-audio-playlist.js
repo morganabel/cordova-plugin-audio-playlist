@@ -8,6 +8,7 @@ var downloadStatus = {
 }
 
 var playlistPrefix = "playlist-";
+var cachePrefix = "cache-";
 
 var isInit = false;
 var localForageInit = false;
@@ -387,6 +388,28 @@ function getPlaylistLookupAsync() {
     } else {
         return Promise.resolve(playlistIdLookup);
     }
+}
+
+function getOrCacheTrackFileUrl(track) {
+    return new Promise(function(resolve, reject) {
+        audioPlugin.localForage.getItem(cachePrefix + track.id).then(function(result) {
+            if (null !== result) {
+                resolve(result);
+            }
+
+            downloadTrack(track, codova.file.cacheDirectory).then(function(downloadTrackFileUrl) {
+                audioPlugin.setItem(cachePrefix + track.id, downloadTrackFileUrl).then(function() {
+                    resolve(downloadTrackFileUrl);
+                }).catch(function(err) {
+                    reject(err);
+                });
+            }).catch(function(err) {
+                reject(err);
+            });
+        }).catch(function(err) {
+            reject(err);
+        })
+    });
 }
 
 function configureLocalForage() {

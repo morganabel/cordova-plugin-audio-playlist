@@ -8,6 +8,7 @@ var downloadStatus = {
 }
 
 var playlistPrefix = "playlist-";
+var cachePrefix = "cache-";
 
 var isInit = false;
 var localForageInit = false;
@@ -140,13 +141,7 @@ exports.isPlaylistSaved = function(playlistId) {
         configureLocalForage();
     }
 
-    return new Promise(function(resolve, reject) {
-        getPlaylistLookupAsync().then(function(success) {
-            resolve(playlistIdLookup.hasOwnProperty(playlistId));
-        }).catch(function(err) {
-            reject(err);
-        });
-    });
+    return isPlaylistSavedAsync(playlistId);
 }
 
 exports.savePlaylistOffline = function(inputPlaylist) {
@@ -361,6 +356,18 @@ function syncSongLists(inputSongs, savedSongs) {
     });
 
     return inputSongs;
+}
+
+function isPlaylistSavedAsync(playlistId, cache) {
+    if (cache === void 0) { cache = false; }
+    
+    return new Promise(function(resolve, reject) {
+        getPlaylistLookupAsync().then(function(success) {
+            resolve(playlistIdLookup.hasOwnProperty(playlistId));
+        }).catch(function(err) {
+            reject(err);
+        });
+    });
 }
 
 function getPlaylistLookupAsync() {

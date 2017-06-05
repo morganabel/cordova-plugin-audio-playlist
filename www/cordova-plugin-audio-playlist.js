@@ -396,6 +396,28 @@ function getPlaylistLookupAsync() {
     }
 }
 
+function getOrCacheTrackFileUrl(track) {
+    return new Promise(function(resolve, reject) {
+        audioPlugin.localForage.getItem(cachePrefix + track.id).then(function(result) {
+            if (null !== result) {
+                resolve(result);
+            }
+
+            downloadTrack(track, codova.file.cacheDirectory).then(function(downloadTrackFileUrl) {
+                audioPlugin.setItem(cachePrefix + track.id, downloadTrackFileUrl).then(function() {
+                    resolve(downloadTrackFileUrl);
+                }).catch(function(err) {
+                    reject(err);
+                });
+            }).catch(function(err) {
+                reject(err);
+            });
+        }).catch(function(err) {
+            reject(err);
+        })
+    });
+}
+
 function configureLocalForage() {
     // Configure local forage.
     audioPlugin.localForage.config({

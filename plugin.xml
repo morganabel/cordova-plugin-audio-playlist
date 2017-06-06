@@ -21,8 +21,8 @@
         <js-module src="www/localforage.min.js" name="LocalForage">
             <clobbers target="audioPlugin.localForage" />
         </js-module>
-        <js-module src="www/localforage-startswith.js" name="LocalForageStartsWith">
-            <clobbers target="audioPlugin.localForageStartsWith" />
+        <js-module src="www/promise-queue.min.js" name="PromiseQueue">
+            <clobbers target="audioPlugin.promiseQueue" />
         </js-module>
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioPlayer.java" target-dir="src/com/mabel/plugins" />
@@ -42,8 +42,8 @@
         <js-module src="www/localforage.min.js" name="LocalForage">
             <clobbers target="audioPlugin.localForage" />
         </js-module>
-        <js-module src="www/localforage-startswith.js" name="LocalForageStartsWith">
-            <clobbers target="audioPlugin.localForageStartsWith" />
+        <js-module src="www/promise-queue.min.js" name="PromiseQueue">
+            <clobbers target="audioPlugin.promiseQueue" />
         </js-module>
         <framework src="AVFoundation.framework" weak="true" />
         <header-file src="src/ios/MediaPlayer-Bridging-Header.h"/>

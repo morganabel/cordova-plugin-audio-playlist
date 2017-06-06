@@ -9,6 +9,11 @@ var downloadStatus = {
 
 var playlistPrefix = "playlist-";
 var cachePrefix = "cache-";
+var savedTrackPrefix = "track-url-";
+var cacheDirectoryConst = "APP_CACHE/";
+var savedDirectoryConst = "APP_SAVED/";
+
+var pq;
 
 var isInit = false;
 var localForageInit = false;
@@ -22,6 +27,8 @@ exports.initAudio = function(success, error) {
     }
 
     isInit = true;
+    clearCache();
+    pq = new audioPlugin.promiseQueue.default({ concurrency: 2 });
 
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "initAudio", []);
 };
@@ -32,7 +39,14 @@ exports.isInit = function() {
 
 exports.clearPlaylist = function(success, error) {
     tracks = [];
-    return execPromise(success, error, "CordovaPluginAudioPlaylist", "clearPlaylist", []);
+    pq.pause();
+    pq = new audioPlugin.promiseQueue.default({ concurrency: 2 });
+    
+    return clearCache().then(function() {
+    }).catch(function(err) {
+    }).then(function() {
+        return execPromise(success, error, "CordovaPluginAudioPlaylist", "clearPlaylist", []);
+    })    
 }
 
 exports.getCurrentTrack = function(success, error) {
@@ -57,15 +71,19 @@ exports.addItem = function(arg0, success, error) {
     if (arg0 instanceof Object && arg0.hasOwnProperty("id") && arg0.hasOwnProperty("url")) {
         tracks.push(arg0);
 
-        return audioPlugin.localForage.getItem("track-url-" + arg0.id).then(function(result) {
-            if (null !== result) {
-                arg0.url = result;
-            }
-        }).catch(function(err) {
-            return Promise.reject(err);
-        }).then(function() {
-            return execPromise(success, error, "CordovaPluginAudioPlaylist", "addItem", [arg0]);
-        })
+        pq.add(function() {
+            return getSavedOrCachedTrackFileUrl(arg0).then(function(result) {
+                if (null !== result) {
+                    arg0.url = result;
+                }
+            }).catch(function(err) {
+                return Promise.reject(err);
+            }).then(function() {
+                return execPromise(success, error, "CordovaPluginAudioPlaylist", "addItem", [arg0]);
+            })
+        });
+
+        return Promise.resolve();
     } else {
         throw "Track not a valid object";
     }
@@ -77,7 +95,7 @@ exports.addManyItems = function(arg0, success, error) {
             function(track) {
                 tracks.push(track);
 
-                return audioPlugin.localForage.getItem("track-url-" + track.id).then(function(result) {
+                return getSavedOrCachedTrackFileUrl(track).then(function(result) {
                     if (null !== result) {
                         track.url = result;
                     }
@@ -216,6 +234,16 @@ exports.removePlaylistOffline = function(playlistId) {
     });
 }
 
+exports.removeSavedTracksByPrefix = function(prefix) {
+    if (!localForageInit) {
+        configureLocalForage();
+    }
+
+    if (prefix.length < 1) return;
+
+    return clearCache(prefix);
+}
+
 exports.syncPlaylistOffline = function(playlistFromServer) {
     if (!localForageInit) {
         configureLocalForage();
@@ -259,7 +287,7 @@ function downloadPlaylist(playlist, cache) {
                         case downloadStatus.NONE:
                         case downloadStatus.FAILED:
                             return downloadTrack(song).then(function(trackResult) {
-                                return audioPlugin.localForage.setItem("track-url-" + song.id, trackResult).then(function(storeSongResult) {
+                                return audioPlugin.localForage.setItem(savedTrackPrefix + song.id, trackResult).then(function(storeSongResult) {
                                     playlist.songs[index].url = trackResult;
                                     playlist.songs[index].downloadStatus = downloadStatus.DONE;
                                 });
@@ -284,8 +312,10 @@ function downloadPlaylist(playlist, cache) {
     });
 }
 
-function downloadTrack(track, dataStorageLocation) {
-    if (dataStorageLocation === void 0) { dataStorageLocation = cordova.file.dataDirectory; }
+function downloadTrack(track, cache) {
+    if (cache === void 0) { cache = false; }
+    var dataStorageLocation = (!cache) ? cordova.file.dataDirectory : cordova.file.cacheDirectory; 
+    var prefix = (!cache) ? savedDirectoryConst : cacheDirectoryConst;
 
     return new Promise(function(resolve, reject) {
         window.resolveLocalFileSystemURL(dataStorageLocation, function (dirEntry) {
@@ -298,7 +328,7 @@ function downloadTrack(track, dataStorageLocation) {
                     uri,
                     fileEntry.nativeURL,
                     function(entry) {
-                        resolve(entry.nativeURL);
+                        resolve(prefix + entry.name);
                     },
                     function(error) {
                         reject(error);
@@ -313,6 +343,23 @@ function downloadTrack(track, dataStorageLocation) {
             });
         }, function(onErrorFs) {
             reject(onErrorFs);
+        });
+    });
+}
+
+function deleteFileUrlFromDisk(url) {
+    return new Promise(function(resolve, reject) {
+        url = replaceAll(url, savedDirectoryConst, cordova.file.dataDirectory);
+        url = replaceAll(url, cacheDirectoryConst, cordova.file.cacheDirectory);
+
+        window.resolveLocalFileSystemURL(url, function(file) {
+            file.remove(function(){
+                resolve();
+            }, function(err) {
+                reject(err);
+            });
+        }, function (err) {
+            reject(err);
         });
     });
 }
@@ -396,6 +443,27 @@ function getPlaylistLookupAsync() {
     }
 }
 
+
+function getSavedOrCachedTrackFileUrl(track) {
+    return new Promise(function(resolve, reject) {
+        audioPlugin.localForage.getItem(savedTrackPrefix + track.id).then(function(result) {
+            if (null !== result) {
+                result = replaceAll(result, savedDirectoryConst, cordova.file.dataDirectory);
+                resolve(result);
+            } else {
+                getOrCacheTrackFileUrl(track).then(function(downloadTrackFileUrl) {
+                    downloadTrackFileUrl = replaceAll(downloadTrackFileUrl, cacheDirectoryConst, cordova.file.cacheDirectory);
+                    resolve(downloadTrackFileUrl);
+                }).catch(function(err) {
+                    reject(err);
+                });
+            }
+        }).catch(function(err) {
+            reject(err);
+        });
+    });
+}
+
 function getOrCacheTrackFileUrl(track) {
     return new Promise(function(resolve, reject) {
         audioPlugin.localForage.getItem(cachePrefix + track.id).then(function(result) {
@@ -403,8 +471,8 @@ function getOrCacheTrackFileUrl(track) {
                 resolve(result);
             }
 
-            downloadTrack(track, codova.file.cacheDirectory).then(function(downloadTrackFileUrl) {
-                audioPlugin.setItem(cachePrefix + track.id, downloadTrackFileUrl).then(function() {
+            downloadTrack(track, true).then(function(downloadTrackFileUrl) {
+                audioPlugin.localForage.setItem(cachePrefix + track.id, downloadTrackFileUrl).then(function() {
                     resolve(downloadTrackFileUrl);
                 }).catch(function(err) {
                     reject(err);
@@ -415,6 +483,36 @@ function getOrCacheTrackFileUrl(track) {
         }).catch(function(err) {
             reject(err);
         })
+    });
+}
+
+function clearCache(prefix) {
+    if (prefix === void 0) { prefix = cachePrefix; }
+    var matches = [];
+
+    return audioPlugin.localForage.iterate(function(value, key, iterationNumber) {
+        if (startsWith(key, prefix)) {
+            matches.push({
+                key: key,
+                value: value
+            });
+        }
+    }).then(function() {
+        if (matches.length > 0) {
+            Promise.all(
+                matches.map(function(match, index) {
+                    return deleteFileUrlFromDisk(match.value).then(function() {
+                        return audioPlugin.localForage.removeItem(match.key);
+                    });
+                })
+            ).then(function(result) {
+
+            }).catch(function(err) {
+
+            });
+        }
+    }).catch(function(err) {
+        
     });
 }
 
@@ -445,6 +543,22 @@ function execPromise(success, error, pluginName, method, args) {
             method,
             args);
     });
+}
+
+function startsWith(str, prefix) {
+    if (str.length < prefix.length)
+        return false;
+    for (var i = prefix.length - 1; (i >= 0) && (str[i] === prefix[i]); --i)
+        continue;
+    return i < 0;
+}
+
+function replaceAll(input, search, replacement) {
+    return input.replace(new RegExp(escapeRegExp(search), 'g'), replacement)
+}
+
+function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
 
 function extend(obj, src, overwrite) {

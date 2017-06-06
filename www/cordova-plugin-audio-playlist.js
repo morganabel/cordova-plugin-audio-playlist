@@ -69,14 +69,28 @@ exports.isLastTrack = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "isLastTrack", []);
 }
 
-exports.addItem = function(arg0, success, error) {
+exports.addItem = function(arg0, progressFn, success, error) {
     if (arg0 instanceof Object && arg0.hasOwnProperty("id") && arg0.hasOwnProperty("url")) {
+        var trackProgress = isFunction(progressFn);
+        if (trackProgress) {
+            onProgressLookupIdToPercentages = {};
+            onProgressFn = progressFn;
+        }
+
         tracks.push(arg0);
+        if (trackProgress) {
+            onProgressLookupIdToPercentages[arg0.id] = 0;
+        }
 
         pq.add(function() {
             return getSavedOrCachedTrackFileUrl(arg0).then(function(result) {
                 if (null !== result) {
                     arg0.url = result;
+                }
+
+                if (trackProgress) {
+                    onProgressLookupIdToPercentages[arg0.id] = 100;
+                    calculateAndReportOnProgress();
                 }
             }).catch(function(err) {
                 return Promise.reject(err);
@@ -91,15 +105,29 @@ exports.addItem = function(arg0, success, error) {
     }
 };
 
-exports.addManyItems = function(arg0, success, error) {
+exports.addManyItems = function(arg0, progressFn, success, error) {
     if (Array.isArray(arg0)) {
+        var trackProgress = isFunction(progressFn);
+        if (trackProgress) {
+            onProgressLookupIdToPercentages = {};
+            onProgressFn = progressFn;
+        }
+
         return Promise.all(arg0.map(
             function(track) {
                 tracks.push(track);
+                if (trackProgress) {
+                    onProgressLookupIdToPercentages[track.id] = 0;
+                }
 
                 return getSavedOrCachedTrackFileUrl(track).then(function(result) {
                     if (null !== result) {
                         track.url = result;
+                    }
+
+                    if (trackProgress) {
+                        onProgressLookupIdToPercentages[track.id] = 100;
+                        calculateAndReportOnProgress();
                     }
                 })
             })
@@ -328,6 +356,7 @@ function downloadTrack(track, cache) {
             dirEntry.getFile(track.id + '.mp3', { create: true, exclusive: false }, function (fileEntry) {
                 if (onProgressLookupIdToPercentages.hasOwnProperty(track.id)) {
                     fileTransfer.onProgress = function(progressEvent) {
+                        if (!onProgressLookupIdToPercentages.hasOwnProperty(track.id)) return;
                         if (progressEvent.lengthComputable) {
                             onProgressLookupIdToPercentages[track.id] = (progressEvent.loaded / progressEvent.total) * 100;
                         } else {
@@ -335,6 +364,8 @@ function downloadTrack(track, cache) {
                                 onProgressLookupIdToPercentages[track.id]++;
                             }
                         }
+
+                        calculateAndReportOnProgress();
                     }
                 }
 
@@ -521,7 +552,7 @@ function clearCache(prefix) {
                     return deleteFileUrlFromDisk(match.value).then(function() {
                         return audioPlugin.localForage.removeItem(match.key);
                     }).catch(function(err) {
-                        if (err.hasOwnProperty(code) && err.code === 1) {
+                        if (err.hasOwnProperty("code") && err.code === 1) {
                             return audioPlugin.localForage.removeItem(match.key);
                         }
                     });
@@ -542,7 +573,7 @@ function calculateAndReportOnProgress() {
     for (prop in onProgressLookupIdToPercentages) {
         if (onProgressLookupIdToPercentages.hasOwnProperty(prop)) {
             count++;
-            percentageTotal += prop;
+            percentageTotal += onProgressLookupIdToPercentages[prop];
         }
     }
 
@@ -620,4 +651,8 @@ function isEmpty(e) {
     default:
       return false;
   }
+}
+
+function isFunction(obj) {
+    return !!(obj && obj.constructor && obj.call && obj.apply);
 }

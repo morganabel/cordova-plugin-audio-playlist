@@ -14,6 +14,8 @@ var cacheDirectoryConst = "APP_CACHE/";
 var savedDirectoryConst = "APP_SAVED/";
 
 var pq;
+var onProgressLookupIdToPercentages = {};
+var onProgressFn = null;
 
 var isInit = false;
 var localForageInit = false;
@@ -324,6 +326,18 @@ function downloadTrack(track, cache) {
 
             // Parameters passed to getFile create a new file or return the file if it already exists.
             dirEntry.getFile(track.id + '.mp3', { create: true, exclusive: false }, function (fileEntry) {
+                if (onProgressLookupIdToPercentages.hasOwnProperty(track.id)) {
+                    fileTransfer.onProgress = function(progressEvent) {
+                        if (progressEvent.lengthComputable) {
+                            onProgressLookupIdToPercentages[track.id] = (progressEvent.loaded / progressEvent.total) * 100;
+                        } else {
+                            if (onProgressLookupIdToPercentages[track.id] <= 99) {
+                                onProgressLookupIdToPercentages[track.id]++;
+                            }
+                        }
+                    }
+                }
+
                 fileTransfer.download(
                     uri,
                     fileEntry.nativeURL,
@@ -499,21 +513,41 @@ function clearCache(prefix) {
         }
     }).then(function() {
         if (matches.length > 0) {
-            Promise.all(
-                matches.map(function(match, index) {
+            var concurrencyCount = (device.platform === "Android") ? 1 : 10;
+            var matchQueue = new audioPlugin.promiseQueue.default({ concurrency: concurrencyCount });
+            
+            matches.forEach(function(match) {
+                matchQueue.add(function() {
                     return deleteFileUrlFromDisk(match.value).then(function() {
                         return audioPlugin.localForage.removeItem(match.key);
+                    }).catch(function(err) {
+                        if (err.hasOwnProperty(code) && err.code === 1) {
+                            return audioPlugin.localForage.removeItem(match.key);
+                        }
                     });
-                })
-            ).then(function(result) {
-
-            }).catch(function(err) {
-
+                });
             });
         }
     }).catch(function(err) {
         
     });
+}
+
+function calculateAndReportOnProgress() {
+    if (null === onProgressFn) return;
+
+    var count = 0;
+    var percentageTotal = 0;
+
+    for (prop in onProgressLookupIdToPercentages) {
+        if (onProgressLookupIdToPercentages.hasOwnProperty(prop)) {
+            count++;
+            percentageTotal += prop;
+        }
+    }
+
+    var percentage = percentageTotal / count;
+    onProgressFn(percentage);
 }
 
 function configureLocalForage() {

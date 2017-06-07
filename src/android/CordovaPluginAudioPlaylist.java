@@ -113,6 +113,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     private void clearPlaylist() {
+        this.audioPlayer.pause();
         this.audioPlayer.destroy();
         this.audioPlayer = new AudioPlayer(this);
     }

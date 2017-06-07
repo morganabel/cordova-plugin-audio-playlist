@@ -80,7 +80,6 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void pause() {
-
         // If playing, then pause
         if (this.state == STATE.PLAYING && this.player != null) {
             this.player.pause();

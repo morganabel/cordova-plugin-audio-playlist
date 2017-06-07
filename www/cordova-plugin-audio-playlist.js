@@ -568,17 +568,29 @@ function calculateAndReportOnProgress() {
     if (null === onProgressFn) return;
 
     var count = 0;
+    var completed = 0;
     var percentageTotal = 0;
 
     for (prop in onProgressLookupIdToPercentages) {
         if (onProgressLookupIdToPercentages.hasOwnProperty(prop)) {
             count++;
             percentageTotal += onProgressLookupIdToPercentages[prop];
+
+            if (onProgressLookupIdToPercentages[prop] >= 99) {
+                completed++;
+            }
         }
     }
 
     var percentage = percentageTotal / count;
-    onProgressFn(percentage);
+
+    var output = {
+        percentage: percentage,
+        completed: completed,
+        total: count
+    };
+
+    onProgressFn(output);
 }
 
 function configureLocalForage() {

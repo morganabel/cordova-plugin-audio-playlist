@@ -69,6 +69,10 @@ exports.isLastTrack = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "isLastTrack", []);
 }
 
+exports.getTotalTrackCount = function() {
+    return tracks.length;
+}
+
 exports.addItem = function(arg0, progressFn, success, error) {
     if (arg0 instanceof Object && arg0.hasOwnProperty("id") && arg0.hasOwnProperty("url")) {
         var trackProgress = isFunction(progressFn);

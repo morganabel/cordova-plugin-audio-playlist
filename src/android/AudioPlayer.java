@@ -150,6 +150,10 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         return this.playIndex;
     }
 
+    public Integer getTotalTrackCount() {
+        return this.queuedItems.size();
+    }
+
     public boolean isLastTrack() {
         if (this.playIndex >= queuedItems.size()-1) {
             return true;

@@ -153,6 +153,10 @@ extension Jukebox {
     public func getPlayIndex() -> Int {
         return playIndex
     }
+
+    public func getTotalTrackCount() -> Int {
+        return queuedItems.count
+    }
     
     /**
      Seeks to a certain second within the current AVPlayerItem and starts playing

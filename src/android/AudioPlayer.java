@@ -107,7 +107,6 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void replay() {
-        this.player.seekTo(0);
         this.play(0);
     }
 

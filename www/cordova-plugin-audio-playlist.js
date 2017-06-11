@@ -172,6 +172,10 @@ exports.stop = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "stop", []);
 }
 
+exports.setAutoLoop = function(shouldLoop, success, error) {
+    return execPromise(success, error, "CordovaPluginAudioPlaylist", "setAutoLoop", [shouldLoop]);
+}
+
 exports.loop = function(success, error) {
     return execPromise(success, error, "CordovaPluginAudioPlaylist", "loop", []);
 }

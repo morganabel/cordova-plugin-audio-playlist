@@ -97,11 +97,15 @@ extension Jukebox {
     /**
      Starts playback from the beginning of the queue.
      */
-    public func replay(){
+    public func replay() {
         guard playerOperational else {return}
         stopProgressTimer()
         seek(toSecond: 0)
         play(atIndex: 0)
+    }
+
+    public func setAutoLoop(shouldAutoLoop shouldLoop: Bool) {
+        autoLoop = shouldLoop
     }
     
     /**
@@ -272,6 +276,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     
     fileprivate (set) open var playIndex       =   0
     fileprivate (set) open var queuedItems     :   [JukeboxItem]!
+    fileprivate (set) open var autoLoop        :   false  
     fileprivate (set) open var state           =   State.ready {
         didSet {
             delegate?.jukeboxStateDidChange(self)
@@ -540,8 +545,12 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     
     func playerItemDidPlayToEnd(_ notification : Notification){
         if playIndex >= queuedItems.count - 1 {
-            stop()
-            state = .ended
+            if (autoLoop) {
+                replay()
+            } else {
+                stop()
+                state = .ended
+            }
         } else {
             play(atIndex: playIndex + 1)
         }

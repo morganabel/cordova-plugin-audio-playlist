@@ -45,7 +45,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     private Handler progressTimerHandler = new Handler();
     private Runnable progressRunnable = null;
     private final Integer progressTimerInterval = 500;
-    private boolean stopRunnable = false;         
+    private boolean stopRunnable = false;      
+    private boolean autoLoop = false;   
 
     public AudioPlayer(CordovaPluginAudioPlaylist link) {
         this.cordovaLink = link;
@@ -108,6 +109,10 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public void replay() {
         this.play(0);
+    }
+
+    public void setAutoLoop(boolean shouldAutoLoop) {
+        this.autoLoop = shouldAutoLoop;
     }
 
     public void playNext() {
@@ -194,8 +199,12 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public void onCompletion(MediaPlayer player) {
         if (this.playIndex >= queuedItems.size()-1) {
-            this.stop();
-            this.setState(STATE.ENDED);
+            if (this.autoLoop) {
+                this.replay();
+            } else {
+                this.stop();
+                this.setState(STATE.ENDED);
+            }
         } else {
             this.playNext();
         }

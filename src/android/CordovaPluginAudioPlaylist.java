@@ -73,6 +73,8 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
             this.stop();
         } else if (action.equals("loop")) {
             this.loop();
+        } else if (action.equals("setAutoLoop")) {
+            this.setAutoLoop(args.getBoolean(0));
         } else if (action.equals("getPlayIndex")) {
             callbackContext.sendPluginResult(new PluginResult(status, this.audioPlayer.getPlayIndex()));
             return true;
@@ -174,6 +176,10 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     private void loop() {
         this.audioPlayer.replay();
+    }
+
+    private void setAutoLoop(boolean shouldLoop) {
+        this.audioPlayer.setAutoLoop(shouldLoop);
     }
 
     private JSONObject getCurrentSongStatus() {

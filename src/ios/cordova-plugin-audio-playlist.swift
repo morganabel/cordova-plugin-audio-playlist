@@ -266,6 +266,25 @@ import MediaPlayer
         )
     }
 
+    @objc(setAutoLoop:)
+    func setAutoLoop(_ command: CDVInvokedUrlCommand) {
+        var pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_ERROR
+        )
+
+        let autoPlay = command.arguments[0] as! bool
+
+        jukebox.setAutoLoop(shouldAutoLoop: autoPlay)
+        pluginResult = CDVPluginResult(
+            status: CDVCommandStatus_OK
+        )
+
+        self.commandDelegate!.send(
+            pluginResult,
+            callbackId: command.callbackId
+        )
+    }
+
     @objc(loop:)
     func loop(_ command: CDVInvokedUrlCommand) {
         var pluginResult = CDVPluginResult(

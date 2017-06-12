@@ -50,6 +50,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public AudioPlayer(CordovaPluginAudioPlaylist link) {
         this.cordovaLink = link;
+        this.autoLoop = link.autoLoopPlaylist;
     }
 
     public void destroy() {

@@ -276,7 +276,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     
     fileprivate (set) open var playIndex       =   0
     fileprivate (set) open var queuedItems     :   [JukeboxItem]!
-    fileprivate (set) open var autoLoop        :   false  
+    fileprivate (set) open var autoLoop        =   false  
     fileprivate (set) open var state           =   State.ready {
         didSet {
             delegate?.jukeboxStateDidChange(self)

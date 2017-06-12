@@ -223,7 +223,7 @@ exports.savePlaylistOffline = function(inputPlaylist) {
             playlistIdLookup[playlist.id] = true;
         }
 
-        downloadPlaylist(playlist);
+        return downloadPlaylist(playlist);
     });
 }
 

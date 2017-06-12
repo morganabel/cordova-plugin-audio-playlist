@@ -5,6 +5,7 @@ import MediaPlayer
     var jukebox: Jukebox!
     var callbackId: String? = nil
     var errorCallbackId: String? = nil
+    var autoLoopPlaylist: Bool = false
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -51,6 +52,7 @@ import MediaPlayer
             self.jukebox = nil
 
             self.jukebox = Jukebox(delegate: self, items: [])!
+            self.jukebox.setAutoLoop(shouldAutoLoop: self.autoLoopPlaylist)
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -272,7 +274,8 @@ import MediaPlayer
             status: CDVCommandStatus_ERROR
         )
 
-        let autoPlay = command.arguments[0] as! bool
+        let autoPlay = command.arguments[0] as! Bool
+        autoLoopPlaylist = autoPlay
 
         jukebox.setAutoLoop(shouldAutoLoop: autoPlay)
         pluginResult = CDVPluginResult(

@@ -28,8 +28,9 @@ import android.os.Build;
 
 public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private CallbackContext callbackId = null;
-     private CallbackContext errorCallbackId = null;
+    private CallbackContext errorCallbackId = null;
     private AudioPlayer audioPlayer = null;
+    public boolean autoLoopPlaylist = false;
 
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -179,6 +180,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     private void setAutoLoop(boolean shouldLoop) {
+        this.autoLoopPlaylist = shouldLoop;
         this.audioPlayer.setAutoLoop(shouldLoop);
     }
 

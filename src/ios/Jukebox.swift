@@ -52,7 +52,12 @@ extension Jukebox {
      - parameter index: index of the item to be played
      */
     public func play(atIndex index: Int) {
-        guard index < queuedItems.count && index >= 0 else {return}
+        guard index < queuedItems.count && index >= 0 else {
+            if queuedItems.count > 0 && autoLoop {
+                replay()
+            }
+            return
+        }
         
         configureBackgroundAudioTask()
         

@@ -71,6 +71,13 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void play(Integer index) {
+        if (index >= this.queuedItems.size()) {
+            if (this.queuedItems.size() > 0 && this.autoLoop) {
+                this.replay();
+            }
+            return;
+        }
+
         if (this.playIndex == index) {
             this.resumePlaying();
         } else {

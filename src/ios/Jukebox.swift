@@ -199,6 +199,7 @@ extension Jukebox {
         if loadingAssets {
             item.loadPlayerItem()
         }
+        print("Item appended to jukebox playlist")
     }
 
     /**

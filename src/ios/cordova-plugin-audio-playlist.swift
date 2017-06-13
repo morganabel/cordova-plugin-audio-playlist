@@ -453,8 +453,10 @@ import MediaPlayer
             case .remoteControlPause :
                 jukebox.pause()
             case .remoteControlNextTrack :
+                print("Remote Control Play Next")
                 jukebox.playNext()
             case .remoteControlPreviousTrack:
+                print("Remote Control Play Previous")
                 jukebox.playPrevious()
             case .remoteControlTogglePlayPause:
                 if jukebox.state == .playing {

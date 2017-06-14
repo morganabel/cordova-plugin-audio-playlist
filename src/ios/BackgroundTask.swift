@@ -15,7 +15,7 @@ class BackgroundTask {
     }
 
     func begin() {
-        self.identifier = application.beginBackgroundTaskWithExpirationHandler {
+        self.identifier = application.beginBackgroundTask {
             self.end()
         }
     }

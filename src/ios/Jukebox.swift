@@ -558,11 +558,11 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func handleEnterBackground() {
         guard player?.currentItem != nil else {return}
 
-        let timeLeft = (item.meta.duration ?? 0) - (item.currentTime ?? 0)
+        let timeLeft = (currentItem?.meta.duration ?? 0) - (currentItem?.currentTime ?? 0)
         let bgTimeRemaining =  UIApplication.shared.backgroundTimeRemaining
 
         if bgTimeRemaining < (timeLeft) || state == .loading {
-            backgroundTask = BackgroundTask(UIApplication.shared)
+            backgroundTask = BackgroundTask(application: UIApplication.shared)
             backgroundTask!.begin()
         } else {
             endBackgroundTask()

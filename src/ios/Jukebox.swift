@@ -337,8 +337,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
             return nil
         }
 
-        var paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true) as [String]
-        self.cacheDirectory = paths[0]
+        self.cacheDirectory = FileManager.default().urlsForDirectory(.cachesDirectory, inDomains: .userDomainMask).first!
         
         assignQueuedItems(items)
         configureObservers()

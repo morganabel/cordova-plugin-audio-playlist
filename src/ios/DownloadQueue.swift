@@ -5,6 +5,7 @@ class DownloadQueue : NSObject, DownloaderDelegate {
     var active = true;
     var downloading = false;
     var delegate: DownloaderDelegate?
+    var activeDownloader : Downloader
 
     init(delegate: DownloaderDelegate? = nil)
     {
@@ -29,7 +30,7 @@ class DownloadQueue : NSObject, DownloaderDelegate {
         guard active && !downloading && queuedFiles.count > 0 else { return }
 
         let url = URL(string: queuedFiles[0].url)
-        var downloader = Downloader(delegate: self, itemId: queuedFiles[0].itemId)
+        activeDownloader = Downloader(delegate: self, itemId: queuedFiles[0].itemId)
         downloader.download(url: url!, queuedFiles[0].destinationFileUrl)
         downloading = true
     }

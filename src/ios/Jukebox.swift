@@ -203,6 +203,9 @@ extension Jukebox {
         queuedItems.append(item)
         item.delegate = self
         if loadingAssets {
+            if queuedItems.count == 1 {
+                state = .loading
+            }
             item.loadPlayerItem()
         }
         print("Item appended to jukebox playlist")

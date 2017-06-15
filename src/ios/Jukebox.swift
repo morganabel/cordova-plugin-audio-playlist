@@ -558,14 +558,13 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func handleEnterBackground() {
         guard player?.currentItem != nil else {return}
 
-        let timeLeft = (currentItem?.meta.duration ?? 0) - (currentItem?.currentTime ?? 0)
-        let bgTimeRemaining =  UIApplication.shared.backgroundTimeRemaining
-
-        if bgTimeRemaining < (timeLeft) || state == .loading {
+        if !isBackgroundTimeLongEnough || state == .loading {
             backgroundTask = BackgroundTask(application: UIApplication.shared)
             backgroundTask!.begin()
         } else {
-            endBackgroundTask()
+            if state != .playing {
+                endBackgroundTask()
+            }
         }
     }
     
@@ -588,11 +587,24 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
         guard currentItem?.currentTime != nil else {return}
         updateInfoCenter()
         delegate?.jukeboxPlaybackProgressDidChange(self)
+
+        if !isBackgroundTimeLongEnough {
+            handleEnterBackground()
+        }
     }
 
     func endBackgroundTask() {
         backgroundTask?.end()
         backgroundTask = nil
+    }
+
+    fileprivate func isBackgroundTimeLongEnough() -> Bool {
+        guard player?.currentItem != nil else {return true}
+
+        let timeLeft = (currentItem?.meta.duration ?? 0) - (currentItem?.currentTime ?? 0)
+        let bgTimeRemaining =  UIApplication.shared.backgroundTimeRemaining
+
+        return bgTimeRemaining > timeLeft
     }
     
     fileprivate func registerForPlayToEndNotification(withItem item: AVPlayerItem) {

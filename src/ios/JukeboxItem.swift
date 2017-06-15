@@ -43,6 +43,7 @@ open class JukeboxItem: NSObject {
     open var localId: String?
     open var localTitle: String?
     open let URL: Foundation.URL
+    open let remoteUrl: Foundation.URL
     
     fileprivate(set) open var playerItem: AVPlayerItem?
     fileprivate (set) open var currentTime: Double?
@@ -69,8 +70,9 @@ open class JukeboxItem: NSObject {
     
     - returns: JukeboxItem instance
     */
-    public required init(URL : Foundation.URL, localTitle : String? = nil, id: String? = nil) {
+    public required init(URL : Foundation.URL, remoteUrl: Foundation.URL, localTitle : String? = nil, id: String? = nil) {
         self.URL = URL
+        self.remoteUrl = remoteUrl
         self.identifier = UUID().uuidString
         self.localId = id
         self.localTitle = localTitle

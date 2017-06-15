@@ -332,7 +332,7 @@ import MediaPlayer
             print("error occurred loading image.\n \(error)")
         }
 
-        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!, localTitle: nil, id: data["id"].stringValue)
+        let item = JukeboxItem(URL: URL(string: data["url"].stringValue)!, remoteUrl: URL(string: data["remoteUrl"].stringValue)!, localTitle: nil, id: data["id"].stringValue)
         item.customMetaBuilder = JukeboxItem.MetaBuilder({ (builder) in
             builder.title = title
             builder.artist = artist

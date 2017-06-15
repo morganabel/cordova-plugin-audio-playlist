@@ -89,6 +89,7 @@ exports.addItem = function(arg0, progressFn, success, error) {
         pq.add(function() {
             return getSavedOrCachedTrackFileUrl(arg0).then(function(result) {
                 if (null !== result) {
+                    arg0.remoteUrl = arg0.url;
                     arg0.url = result;
                 }
 
@@ -126,6 +127,7 @@ exports.addManyItems = function(arg0, progressFn, success, error) {
 
                 return getSavedOrCachedTrackFileUrl(track).then(function(result) {
                     if (null !== result) {
+                        track.remoteUrl = track.url;
                         track.url = result;
                     }
 

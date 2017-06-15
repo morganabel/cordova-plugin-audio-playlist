@@ -15,12 +15,16 @@ import org.json.JSONObject;
 
 import com.mabel.plugins.AudioPlayer.STATE;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Environment;
 import android.net.Uri;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -31,10 +35,13 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private CallbackContext errorCallbackId = null;
     private AudioPlayer audioPlayer = null;
     public boolean autoLoopPlaylist = false;
+    public String cacheDirectory = null;
 
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
+        Context context = cordova.getActivity();
+        cacheDirectory = Uri.fromFile(context.getCacheDir()).toString() + '/';
     }
 
     public void onDestroy() {

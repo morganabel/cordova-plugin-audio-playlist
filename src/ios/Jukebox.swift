@@ -282,7 +282,8 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     fileprivate var player                       :   AVPlayer?
     fileprivate var progressObserver             :   AnyObject!
     fileprivate var backgroundIdentifier         =   UIBackgroundTaskInvalid
-    fileprivate var backgroundTask               :   BackgroundTask?      
+    fileprivate var backgroundTask               :   BackgroundTask?
+    fileprivate var cacheDirectory               :   ""      
     fileprivate(set) open weak var delegate    :   JukeboxDelegate?
     
     fileprivate (set) open var playIndex       =   0
@@ -335,6 +336,9 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
             print("[Jukebox - Error] \(error)")
             return nil
         }
+
+        var paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true) as [String]
+        self.cacheDirectory = paths[0]
         
         assignQueuedItems(items)
         configureObservers()

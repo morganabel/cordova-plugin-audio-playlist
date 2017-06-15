@@ -18,11 +18,13 @@ public class AudioTrack {
     public String artist = "";
     public String album = "";
     public String url = "";
+    public String remoteUrl = "";
 
     public AudioTrack(JSONObject track) {
         try {
             String inputUrl = track.getString("url");
             url = this.stripFileProtocol(inputUrl);
+            remoteUrl = this.stripFileProtocol(uriString.getString("remoteUrl"));
 
             id = track.getString("id");
             title = track.getString("title");

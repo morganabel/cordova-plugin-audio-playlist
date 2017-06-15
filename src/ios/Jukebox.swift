@@ -558,7 +558,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     func handleEnterBackground() {
         guard player?.currentItem != nil else {return}
 
-        if !isBackgroundTimeLongEnough || state == .loading {
+        if !isBackgroundTimeLongEnough() || state == .loading {
             backgroundTask = BackgroundTask(application: UIApplication.shared)
             backgroundTask!.begin()
         } else {

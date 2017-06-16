@@ -668,7 +668,7 @@ function escapeRegExp(str) {
 function extend(obj, src, overwrite) {
     Object.keys(src).forEach(function(key) { 
         if (obj.hasOwnProperty(key)) {
-            if (isEmpty(obj[key]) || overwrite === true) {
+            if ((isEmpty(obj[key]) && !isBoolean(obj[key])) || overwrite === true) {
                 obj[key] = src[key];
             }
         } else {
@@ -694,4 +694,8 @@ function isEmpty(e) {
 
 function isFunction(obj) {
     return !!(obj && obj.constructor && obj.call && obj.apply);
+}
+
+function isBoolean(obj) {
+    return typeof obj === 'boolean';
 }

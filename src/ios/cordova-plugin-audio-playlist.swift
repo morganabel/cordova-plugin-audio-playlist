@@ -410,11 +410,13 @@ import MediaPlayer
     func doBuffer(playIndex: Int) {
         if playIndex + 2 >= bufferredTracksJsonArray.count {
             // Always load 2 tracks ahead.
-            DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
-                self.lastBufferedIndex++;
-                self.doAddItem(self.bufferredTracksJsonArray[self.lastBufferedIndex])
-                DispatchQueue.main.async {
-                    self.doBuffer(playIndex: playIndex)
+            if lastBufferedIndex < bufferredTracksJsonArray!.count - 1 {
+                DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
+                    self.lastBufferedIndex++;
+                    self.doAddItem(self.bufferredTracksJsonArray[self.lastBufferedIndex])
+                    DispatchQueue.main.async {
+                        self.doBuffer(playIndex: playIndex)
+                    }
                 }
             }
         }

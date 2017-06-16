@@ -8,6 +8,7 @@ import MediaPlayer
     var autoLoopPlaylist: Bool = false
     var bufferredTracksJsonArray: [JSON]!
     var lastBufferedIndex: Int = -1
+    var buffering = false
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -409,16 +410,17 @@ import MediaPlayer
     }
 
     func doBuffer(playIndex: Int) {
-        if playIndex + 2 >= bufferredTracksJsonArray!.count {
-            // Always load 2 tracks ahead.
-            if lastBufferedIndex < bufferredTracksJsonArray!.count - 1 {
-                DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
-                    self.lastBufferedIndex++;
-                    self.doAddItem(self.bufferredTracksJsonArray![self.lastBufferedIndex])
-                    DispatchQueue.main.async {
-                        self.doBuffer(playIndex: playIndex)
-                    }
+        // Always load 2 tracks ahead.
+        if !buffering && lastBufferedIndex < bufferredTracksJsonArray!.count - 1 && playIndex + 2 >= self.jukebox.queuedItems.count {
+            buffering = true
+            lastBufferedIndex += 1
+            DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
+                self.doAddItem(self.bufferredTracksJsonArray![self.lastBufferedIndex])
+                DispatchQueue.main.async {
+                    self.buffering = false
+                    self.doBuffer(playIndex: playIndex)
                 }
+                
             }
         }
     }

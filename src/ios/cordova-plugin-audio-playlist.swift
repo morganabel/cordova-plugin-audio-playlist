@@ -6,7 +6,7 @@ import MediaPlayer
     var callbackId: String? = nil
     var errorCallbackId: String? = nil
     var autoLoopPlaylist: Bool = false
-    var bufferredTracksJsonArray: [JSON] = []
+    var bufferredTracksJsonArray: [JSON]!
     var lastBufferedIndex: Int = -1
 
     @objc(initAudio:)
@@ -18,6 +18,7 @@ import MediaPlayer
         do {
             // configure jukebox
             jukebox = Jukebox(delegate: self, items: [])!
+            bufferredTracksJsonArray = [JSON]()
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -52,7 +53,7 @@ import MediaPlayer
             self.jukebox.stop();
             self.jukebox.removeAllItems();
             self.jukebox = nil
-            self.bufferredTracksJsonArray.removeAll()
+            self.bufferredTracksJsonArray!.removeAll()
             self.lastBufferedIndex = -1
 
             self.jukebox = Jukebox(delegate: self, items: [])!
@@ -117,7 +118,7 @@ import MediaPlayer
             let data = JSON(command.arguments[0]);
             let autoPlay = data["autoPlay"].bool ?? false
             
-            self.bufferredTracksJsonArray.append(data)
+            self.bufferredTracksJsonArray!.append(data)
             self.doBuffer(playIndex: 0)
             //self.doAddItem(data);
 
@@ -147,7 +148,7 @@ import MediaPlayer
 
             for track in tracks {
                 let data = JSON(track)
-                self.bufferredTracksJsonArray.append(data)
+                self.bufferredTracksJsonArray!.append(data)
                 //self.doAddItem(data)
             }
 
@@ -408,12 +409,12 @@ import MediaPlayer
     }
 
     func doBuffer(playIndex: Int) {
-        if playIndex + 2 >= bufferredTracksJsonArray.count {
+        if playIndex + 2 >= bufferredTracksJsonArray!.count {
             // Always load 2 tracks ahead.
             if lastBufferedIndex < bufferredTracksJsonArray!.count - 1 {
                 DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
                     self.lastBufferedIndex++;
-                    self.doAddItem(self.bufferredTracksJsonArray[self.lastBufferedIndex])
+                    self.doAddItem(self.bufferredTracksJsonArray![self.lastBufferedIndex])
                     DispatchQueue.main.async {
                         self.doBuffer(playIndex: playIndex)
                     }

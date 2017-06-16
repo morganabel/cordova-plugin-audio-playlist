@@ -12,6 +12,9 @@ var cachePrefix = "cache-";
 var savedTrackPrefix = "track-url-";
 var cacheDirectoryConst = "APP_CACHE/";
 var savedDirectoryConst = "APP_SAVED/";
+var defaultOptions = {
+    useCache: true
+}
 
 var pq;
 var onProgressLookupIdToPercentages = {};
@@ -22,8 +25,12 @@ var localForageInit = false;
 var tracks = [];
 var playlistIdLookup = null;
 var getIdsPromise = null;
+var currentOptions = {};
 
-exports.initAudio = function(success, error) {
+exports.initAudio = function(options, success, error) {
+    // Set current options for plugin.
+    currentOptions = (options === void 0) ? defaultOptions : extend(options, defaultOptions, false);
+
     if (!localForageInit) {
         configureLocalForage();
     }
@@ -520,6 +527,8 @@ function getSavedOrCachedTrackFileUrl(track) {
 }
 
 function getOrCacheTrackFileUrl(track) {
+    if (!currentOptions.useCache) return Promise.resolve(track.url);
+
     return new Promise(function(resolve, reject) {
         audioPlugin.localForage.getItem(cachePrefix + track.id).then(function(result) {
             if (null !== result) {
@@ -648,6 +657,14 @@ function escapeRegExp(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
 
+/**
+ * Extends an object using a second object.
+ * 
+ * @param {any} obj - The object being extended (changed)
+ * @param {any} src - The object with values used to extend obj
+ * @param {any} overwrite - Resolve conflicts by ovewriting current object with source object => true or false?
+ * @returns {any} obj
+ */
 function extend(obj, src, overwrite) {
     Object.keys(src).forEach(function(key) { 
         if (obj.hasOwnProperty(key)) {

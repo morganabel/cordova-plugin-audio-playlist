@@ -285,7 +285,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
     fileprivate var progressObserver             :   AnyObject!
     fileprivate var backgroundIdentifier         =   UIBackgroundTaskInvalid
     fileprivate var backgroundTask               :   BackgroundTask?
-    fileprivate var cacheDirectory               :   ""      
+    fileprivate var cacheDirectory               =   ""      
     fileprivate(set) open weak var delegate    :   JukeboxDelegate?
     
     fileprivate (set) open var playIndex       =   0

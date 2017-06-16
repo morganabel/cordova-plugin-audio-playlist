@@ -19,7 +19,7 @@ class Downloader : NSObject, URLSessionDownloadDelegate {
     init(delegate: DownloaderDelegate? = nil, itemId: String)
     {
         self.delegate = delegate
-        self.itemId = itemid
+        self.itemId = itemId
     }
 
     //is called once the download is complete
@@ -35,7 +35,7 @@ class Downloader : NSObject, URLSessionDownloadDelegate {
     //this is to track progress
     private func URLSession(session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64)
     {
-        progress = Float(totalBytesWritten)/Float(totalBytesExpectedToWrite) * 100
+        progress = Double(Float(totalBytesWritten)/Float(totalBytesExpectedToWrite) * Float(100))
         self.delegate?.downloaderOnProgress(self)
     }
 

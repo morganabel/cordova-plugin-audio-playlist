@@ -52,8 +52,8 @@ import MediaPlayer
             self.jukebox.stop();
             self.jukebox.removeAllItems();
             self.jukebox = nil
-            bufferredTracksJsonArray.removeAll()
-            lastBufferedIndex = -1
+            self.bufferredTracksJsonArray.removeAll()
+            self.lastBufferedIndex = -1
 
             self.jukebox = Jukebox(delegate: self, items: [])!
             self.jukebox.setAutoLoop(shouldAutoLoop: self.autoLoopPlaylist)

@@ -25,11 +25,11 @@ var localForageInit = false;
 var tracks = [];
 var playlistIdLookup = null;
 var getIdsPromise = null;
-var currentOptions = {};
+var currentOptions = Object.assign({}, defaultOptions);
 
 exports.initAudio = function(options, success, error) {
     // Set current options for plugin.
-    currentOptions = (options === void 0) ? defaultOptions : extend(options, defaultOptions, false);
+    currentOptions = (options === void 0) ? Object.assign({}, defaultOptions) : extend(options, defaultOptions, false);
 
     if (!localForageInit) {
         configureLocalForage();

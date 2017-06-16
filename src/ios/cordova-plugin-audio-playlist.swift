@@ -411,7 +411,7 @@ import MediaPlayer
         if playIndex + 2 >= bufferredTracksJsonArray.count {
             // Always load 2 tracks ahead.
             lastBufferedIndex++;
-            DispatchQueue.global(qos: .background).async {
+            DispatchQueue(label: "cordova-plugin-audio-playlist", qos: .background).async {
                 self.doAddItem(self.bufferredTracksJsonArray[self.lastBufferedIndex])
                 DispatchQueue.main.async {
                     self.doBuffer(playIndex: playIndex)

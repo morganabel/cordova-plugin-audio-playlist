@@ -29,6 +29,7 @@ import MediaPlayer
 
 public protocol JukeboxDelegate: class {
     func jukeboxStateDidChange(_ jukebox : Jukebox)
+    func jukeboxTrackChange(_ jukebox : Jukebox)
     func jukeboxPlaybackProgressDidChange(_ jukebox : Jukebox)
     func jukeboxDidLoadItem(_ jukebox : Jukebox, item : JukeboxItem)
     func jukeboxDidUpdateMetadata(_ jukebox : Jukebox, forItem: JukeboxItem)
@@ -75,6 +76,7 @@ extension Jukebox {
                 loadPlaybackItem()
             }
             
+            delegate?.jukeboxTrackChange(self)
             preloadNextAndPrevious(atIndex: playIndex)
         }
         updateInfoCenter()

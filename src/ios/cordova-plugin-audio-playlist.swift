@@ -6,6 +6,8 @@ import MediaPlayer
     var callbackId: String? = nil
     var errorCallbackId: String? = nil
     var autoLoopPlaylist: Bool = false
+    var bufferredTracksJsonArray: [JSON] = []
+    var lastBufferedIndex: Int = -1
 
     @objc(initAudio:)
     func initAudio(_ command: CDVInvokedUrlCommand) {
@@ -50,6 +52,8 @@ import MediaPlayer
             self.jukebox.stop();
             self.jukebox.removeAllItems();
             self.jukebox = nil
+            bufferredTracksJsonArray.removeAll()
+            lastBufferedIndex = -1
 
             self.jukebox = Jukebox(delegate: self, items: [])!
             self.jukebox.setAutoLoop(shouldAutoLoop: self.autoLoopPlaylist)
@@ -113,7 +117,9 @@ import MediaPlayer
             let data = JSON(command.arguments[0]);
             let autoPlay = data["autoPlay"].bool ?? false
             
-            self.doAddItem(data);
+            self.bufferredTracksJsonArray.append(data)
+            self.doBuffer(playIndex: 0)
+            //self.doAddItem(data);
 
             if autoPlay {
                 self.jukebox.play();
@@ -141,8 +147,11 @@ import MediaPlayer
 
             for track in tracks {
                 let data = JSON(track)
-                self.doAddItem(data)
+                self.bufferredTracksJsonArray.append(data)
+                //self.doAddItem(data)
             }
+
+            self.doBuffer(playIndex: 0)
 
             pluginResult = CDVPluginResult(
                 status: CDVCommandStatus_OK
@@ -398,6 +407,19 @@ import MediaPlayer
         }
     }
 
+    func doBuffer(playIndex: Int) {
+        if playIndex + 2 >= bufferredTracksJsonArray.count {
+            // Always load 2 tracks ahead.
+            lastBufferedIndex++;
+            DispatchQueue.global(qos: .background).async {
+                self.doAddItem(self.bufferredTracksJsonArray[self.lastBufferedIndex])
+                DispatchQueue.main.async {
+                    self.doBuffer(playIndex: playIndex)
+                }
+            }
+        }
+    }
+
     func jukeboxDidLoadItem(_ jukebox: Jukebox, item: JukeboxItem) {
         updateSongStatus()
         print("Jukebox did load: \(item.URL.lastPathComponent)")
@@ -432,6 +454,10 @@ import MediaPlayer
         updateSongStatus()
 
         print("Jukebox state changed to \(jukebox.state)")
+    }
+
+    func jukeboxTrackChange(_ jukebox : Jukebox) {
+        doBuffer(playIndex: jukebox.playIndex)
     }
 
     func jukeboxDidUpdateMetadata(_ jukebox: Jukebox, forItem: JukeboxItem) {

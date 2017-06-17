@@ -60,9 +60,9 @@ exports.clearPlaylist = function(success, error) {
 
 exports.getCurrentTrack = function(success, error) {
     return new Promise(function(resolve, reject) {
-        execPromise(success, error, "CordovaPluginAudioPlaylist", "getPlayIndex", []).then((index) => {
+        execPromise(success, error, "CordovaPluginAudioPlaylist", "getPlayIndex", []).then(function(index) {
             resolve(tracks[index]);
-        }).catch((err) => {
+        }).catch(function(err) {
             reject(reject);
         });
     });
@@ -304,7 +304,7 @@ exports.resumeDownload = function(playlistId) {
         configureLocalForage();
     }
 
-    return audioPlugin.localForage.getItem(playlistPrefix + playlistId).then((playlist) => {
+    return audioPlugin.localForage.getItem(playlistPrefix + playlistId).then(function(playlist) {
         if (!isEmpty(playlist)) {
             downloadPlaylist(playlist);
         }

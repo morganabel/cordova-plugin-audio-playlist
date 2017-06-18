@@ -122,6 +122,15 @@ open class JukeboxItem: NSObject {
                 // Player item is not yet ready.
             }
         }
+
+        if keyPath == #keyPath(AVPlayerItem.isPlaybackLikelyToKeepUp) {
+            // Preloaded enough that it should play smoothly.
+            // If going to play at this point, check not curently .paused status
+        }
+
+        if keyPath == #keyPath(AVPlayerItem.isPlaybackBufferEmpty) {
+            // Playback likely to stall or end.
+        }
     }
     
     deinit {
@@ -162,6 +171,9 @@ open class JukeboxItem: NSObject {
         // Add observers for metadata and item status, respectively.
         playerItem?.addObserver(self, forKeyPath: observedValue, options: NSKeyValueObservingOptions.new, context: nil)
         playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.status), options: [.old, .new], context: nil)
+        playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.isPlaybackLikelyToKeepUp), options: NSKeyValueObservingOptions.new, context: nil)
+        playerItem?.addObserver(self, forKeyPath: #keyPath(AVPlayerItem.isPlaybackBufferEmpty), options: NSKeyValueObservingOptions.new, context: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(playerItemFailedToPlay(_:)), name: NSNotification.Name.AVPlayerItemFailedToPlayToEndTime, object: nil)
 
         // Update metadata.
         update()
@@ -204,6 +216,10 @@ open class JukeboxItem: NSObject {
             return false
         }
         return true
+    }
+
+    fileprivate func playerItemFailedToPlay(_ notification : Notification) {
+        let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
     }
     
     fileprivate func scheduleNotification() {
@@ -254,6 +270,9 @@ open class JukeboxItem: NSObject {
     fileprivate func removeObservers() {
         playerItem?.removeObserver(self, forKeyPath: observedValue)
         playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
+        playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.isPlaybackLikelyToKeepUp))
+        playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.isPlaybackBufferEmpty))
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: nil)
     }
 
     /// Item Metadata

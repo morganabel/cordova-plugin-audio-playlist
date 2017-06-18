@@ -326,10 +326,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
             this.setState(STATE.LOADING);
             this.player.setOnPreparedListener(this);
-            this.player.prepare();
-
-            // Get duration
-            this.duration = getDurationInSeconds();
+            this.player.prepareAsync();
         }
     }
 

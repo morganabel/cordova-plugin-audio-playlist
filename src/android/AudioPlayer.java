@@ -15,6 +15,9 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Environment;
 import android.os.Handler;
 import java.util.*;
+import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
-public class AudioPlayer extends Service implements OnCompletionListener, OnPreparedListener, OnErrorListener, AudioManager.OnAudioFocusChangeListener {
+public class AudioPlayer implements OnCompletionListener, OnPreparedListener, OnErrorListener, AudioManager.OnAudioFocusChangeListener {
     // AudioPlayer states
     public enum STATE { 
                         READY,
@@ -34,18 +37,13 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
                         ENDED
                       };
 
-    public class LocalBinder extends Binder {
-        public AudioPlayer getService() {
-            return AudioPlayer.this;
-        }
-    }
-
     public MediaPlayer player = null;
     public STATE state = STATE.READY;   
     public float duration = -1;    
     public boolean prepareOnly = true; 
     public Integer playIndex = 0;  
     public List<AudioTrack> queuedItems = new ArrayList();
+    public static final String Broadcast_PLAY_NEW_AUDIO = "com.mabel.plugins.CordovaPluginAudioPlaylist.PlayNewAudio";
 
     private CordovaPluginAudioPlaylist cordovaLink = null;
     private AudioManager audioManager = null;
@@ -54,18 +52,15 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
     private final Integer progressTimerInterval = 500;
     private boolean stopRunnable = false;      
     private boolean autoLoop = false;   
+    private AudioPlayerService audioPlayerService;
+    private boolean serviceBound = false;
 
     public AudioPlayer(CordovaPluginAudioPlaylist link) {
         this.cordovaLink = link;
         this.autoLoop = link.autoLoopPlaylist;
-    }
 
-    // Binder given to clients
-    private final IBinder iBinder = new LocalBinder();
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return iBinder;
+        IntentFilter iff = new IntentFilter(AudioPlayerService.ACTION_STATE_CHANGE);
+        LocalBroadcastManager.getInstance(this).registerReceiver(onStateChange, iff);
     }
 
     public void destroy() {
@@ -79,6 +74,8 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
             this.player = null;
             this.endProgressTimer();
         }
+
+        LocalBroadcastManager.getInstance(this).unregisterReciever(onStateChange);
     }
 
     public void play() {
@@ -220,28 +217,6 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
         }
     }
 
-    //The system calls this method when an activity, requests the service be started
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        try {
-            //An audio file is passed to the service through putExtra();
-            mediaFile = intent.getExtras().getString("media");
-        } catch (NullPointerException e) {
-            stopSelf();
-        }
-
-        //Request audio focus
-        if (requestAudioFocus() == false) {
-            //Could not gain focus
-            stopSelf();
-        }
-
-        if (mediaFile != null && mediaFile != "")
-            initMediaPlayer();
-
-        return super.onStartCommand(intent, flags, startId);
-    }
-
     @Override
     public void onCompletion(MediaPlayer player) {
         if (this.playIndex >= queuedItems.size()-1) {
@@ -291,58 +266,6 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
         return false;
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        destroy();
-        removeAudioFocus();
-    }
-
-    @Override
-    public void onAudioFocusChange(int focusState) {
-        //Invoked when the audio focus of the system is updated.
-        switch (focusState) {
-            case AudioManager.AUDIOFOCUS_GAIN:
-                // resume playback
-                if (mediaPlayer == null) initMediaPlayer();
-                else if (!mediaPlayer.isPlaying()) mediaPlayer.start();
-                mediaPlayer.setVolume(1.0f, 1.0f);
-                break;
-            case AudioManager.AUDIOFOCUS_LOSS:
-                // Lost focus for an unbounded amount of time: stop playback and release media player
-                if (mediaPlayer.isPlaying()) mediaPlayer.stop();
-                mediaPlayer.release();
-                mediaPlayer = null;
-                break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                // Lost focus for a short time, but we have to stop
-                // playback. We don't release the media player because playback
-                // is likely to resume
-                if (mediaPlayer.isPlaying()) mediaPlayer.pause();
-                break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                // Lost focus for a short time, but it's ok to keep playing
-                // at an attenuated level
-                if (mediaPlayer.isPlaying()) mediaPlayer.setVolume(0.1f, 0.1f);
-                break;
-        }
-    }
-
-    private boolean requestAudioFocus() {
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            //Focus gained
-            return true;
-        }
-        //Could not gain focus
-        return false;
-    }
-
-    private boolean removeAudioFocus() {
-        return AudioManager.AUDIOFOCUS_REQUEST_GRANTED == audioManager.abandonAudioFocus(this);
-    }
-
     private void setState(STATE inputState) {
         this.state = inputState;
         this.cordovaLink.updateSongStatus();
@@ -389,6 +312,38 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
         
         return false;
     }
+
+    private void playAudio(int audioIndex) {
+        //Check is service is active
+        if (!serviceBound) {
+            //Store Serializable audioList to SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudio(queuedItems);
+            storage.storeAudioIndex(playIndex);
+
+            Intent playerIntent = new Intent(this, AudioPlayerService.class);
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } else {
+            //Store the new audioIndex to SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudioIndex(playIndex);
+
+            //Service is active
+            //Send a broadcast to the service -> PLAY_NEW_AUDIO
+            Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
+            sendBroadcast(broadcastIntent);
+        }
+    }
+
+    private BroadcastReceiver onStateChange = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // intent can contain anydata
+            AudioPlayer.STATE newState = (AudioPlayer.STATE)intent.getSerializableExtra("state");
+            setState(newState);
+        }
+    };
 
     private void loadAudioFile(String file) throws IllegalArgumentException, SecurityException, IllegalStateException, IOException {
         if (this.isRemoteAudio(file)) {
@@ -451,4 +406,20 @@ public class AudioPlayer extends Service implements OnCompletionListener, OnPrep
     private void endProgressTimer() {
         this.stopRunnable = true;
     }
+
+    //Binding this Client to the AudioPlayer Service
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            AudioPlayerService.LocalBinder binder = (AudioPlayerService.LocalBinder) service;
+            audioPlayerService = binder.getService();
+            serviceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
 }

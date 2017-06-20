@@ -18,6 +18,9 @@
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
         </config-file>
+        <config-file target="AndroidManifest.xml" parent="/application">
+            <service android:name=".AudioPlayerService" />
+        </config-file>
         <js-module src="www/localforage.min.js" name="LocalForage">
             <clobbers target="audioPlugin.localForage" />
         </js-module>
@@ -27,6 +30,8 @@
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioPlayer.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioTrack.java" target-dir="src/com/mabel/plugins" />
+        <source-file src="src/android/AudioPlayerService.java" target-dir="src/com/mabel/plugins" />
+        <source-file src="src/android/StorageUtil.java" target-dir="src/com/mabel/plugins" />
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">

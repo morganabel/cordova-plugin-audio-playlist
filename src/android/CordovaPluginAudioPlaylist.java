@@ -34,7 +34,6 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     private CallbackContext callbackId = null;
     private CallbackContext errorCallbackId = null;
     private AudioPlayer audioPlayer = null;
-    private boolean serviceBound = false;
     public boolean autoLoopPlaylist = false;
     public String cacheDirectory = null;
 
@@ -47,6 +46,17 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     public void onDestroy() {
         if (this.audioPlayer != null) this.audioPlayer.destroy();
+    }
+
+    public Bundle onSaveInstanceState() 
+    {
+        Bundle state = new Bundle();
+        return state;
+    }
+
+    public void onRestoreStateForActivityResult(Bundle state, CallbackContext callbackContext) 
+    {
+        //this.callbackContext = callbackContext;
     }
 
     @Override
@@ -121,6 +131,16 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     private void initAudio() {
         this.audioPlayer = new AudioPlayer(this);
+        //Check is service is active
+        if (!serviceBound) {
+            Intent playerIntent = new Intent(this, MediaPlayerService.class);
+            playerIntent.putExtra("media", media);
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } else {
+            //Service is active
+            //Send media with BroadcastReceiver
+        }
     }
 
     private void clearPlaylist() {
@@ -209,20 +229,4 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
         return output;
     }
-
-    //Binding this Client to the AudioPlayer Service
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
-            AudioPlayer.LocalBinder binder = (AudioPlayer.LocalBinder) service;
-            audioPlayer = binder.getService();
-            serviceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            serviceBound = false;
-        }
-    };
 }

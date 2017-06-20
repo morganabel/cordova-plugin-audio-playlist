@@ -10,13 +10,16 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+
+import java.io.Serializable;
 import java.util.*;
 
-public class AudioTrack {
+public class AudioTrack implements Serializable {
     public String id = "";
     public String title = "";
     public String artist = "";
     public String album = "";
+    public String cover = "";
     public String url = "";
     public String remoteUrl = "";
 
@@ -30,6 +33,7 @@ public class AudioTrack {
             title = track.getString("title");
             album = track.getString("album");
             artist = track.getString("artist");
+            cover = track.getString("cover");
         } catch (JSONException e) {
             
         }

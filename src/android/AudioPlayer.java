@@ -37,7 +37,6 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
                         ENDED
                       };
 
-    public MediaPlayer player = null;
     public STATE state = STATE.READY;   
     public float duration = -1;    
     public boolean prepareOnly = true; 
@@ -64,17 +63,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void destroy() {
-        // Stop any play or record
-        if (this.player != null) {
-            if ((this.state == STATE.PLAYING) || (this.state == STATE.PAUSED)) {
-                this.player.stop();
-                this.setState(STATE.READY);
-            }
-            this.player.release();
-            this.player = null;
-            this.endProgressTimer();
-        }
-
+        this.setState(STATE.READY);
+        this.endProgressTimer();
         LocalBroadcastManager.getInstance(this).unregisterReciever(onStateChange);
     }
 
@@ -96,14 +86,15 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             this.endProgressTimer();
             this.state = STATE.READY;
             this.playIndex = index;
-            this.startPlaying(this.queuedItems.get(index).url);
+            this.playAudio(index);
+            //this.startPlaying(this.queuedItems.get(index).url);
         }
     }
 
     public void pause() {
         // If playing, then pause
-        if (this.state == STATE.PLAYING && this.player != null) {
-            this.player.pause();
+        if (this.state == STATE.PLAYING) {
+            this.audioPlayerService.pauseMedia();
             this.endProgressTimer();
             this.setState(STATE.PAUSED);
         }
@@ -119,10 +110,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public void stop() {
         if ((this.state == STATE.PLAYING) || (this.state == STATE.PAUSED)) {
-            this.player.pause();
             this.endProgressTimer();
-            this.player.seekTo(0);
-            this.player.release();
+            this.audioPlayerService.stopMedia();
             this.setState(STATE.READY);
         }
     }
@@ -144,17 +133,18 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public void replayCurrentItem() {
-        this.player.seekTo(0);
-        this.play();
+        this.audioPlayerService.restartMedia();
     }
 
     public void resumePlaying() {
-    	this.startPlaying(this.queuedItems.get(this.playIndex).url);
+        this.audioPlayerService.resumeMedia();
     }
 
     public void addItem(JSONObject object) {
         AudioTrack track = new AudioTrack(object);
         queuedItems.add(track);
+
+        storeAudioPlaylist();
     }
 
     public void removeAllItems() {
@@ -317,8 +307,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         //Check is service is active
         if (!serviceBound) {
             //Store Serializable audioList to SharedPreferences
+            storeAudioPlaylist();
             StorageUtil storage = new StorageUtil(getApplicationContext());
-            storage.storeAudio(queuedItems);
             storage.storeAudioIndex(playIndex);
 
             Intent playerIntent = new Intent(this, AudioPlayerService.class);
@@ -334,6 +324,12 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
             sendBroadcast(broadcastIntent);
         }
+    }
+
+    private void storeAudioPlaylist() {
+        //Store Serializable audioList to SharedPreferences
+        StorageUtil storage = new StorageUtil(getApplicationContext());
+        storage.storeAudio(queuedItems);
     }
 
     private BroadcastReceiver onStateChange = new BroadcastReceiver() {

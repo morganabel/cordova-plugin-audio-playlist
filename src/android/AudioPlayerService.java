@@ -319,34 +319,40 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         mediaPlayer.prepareAsync();
     }
 
-    private void playMedia() {
+    public void playMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
         }
     }
 
-    private void stopMedia() {
+    public void stopMedia() {
         if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
         }
     }
 
-    private void pauseMedia() {
+    public void pauseMedia() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
         }
     }
 
-    private void resumeMedia() {
+    public void resumeMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
         }
     }
 
-    private void skipToNext() {
+    public void restartMedia() {
+        if (mediaPlayer == null) return;
+        mediaPlayer.seekTo(0);
+        mediaPlayer.start();
+    }
+
+    public void skipToNext() {
 
         if (audioIndex == audioList.size() - 1) {
             //if last in playlist
@@ -366,7 +372,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         initMediaPlayer();
     }
 
-    private void skipToPrevious() {
+    public void skipToPrevious() {
 
         if (audioIndex == 0) {
             //if first in playlist

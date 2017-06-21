@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
-public class AudioPlayer implements OnCompletionListener, OnPreparedListener, OnErrorListener, AudioManager.OnAudioFocusChangeListener {
+public class AudioPlayer {
     // AudioPlayer states
     public enum STATE { 
                         READY,
@@ -39,7 +39,6 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public STATE state = STATE.READY;   
     public float duration = -1;    
-    public boolean prepareOnly = true; 
     public Integer playIndex = 0;  
     public List<AudioTrack> queuedItems = new ArrayList();
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.mabel.plugins.CordovaPluginAudioPlaylist.PlayNewAudio";
@@ -122,6 +121,8 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public void setAutoLoop(boolean shouldAutoLoop) {
         this.autoLoop = shouldAutoLoop;
+        StorageUtil storage = new StorageUtil(getApplicationContext());
+        storage.storeAutoPlay(shouldAutoLoop);
     }
 
     public void playNext() {
@@ -149,11 +150,10 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
     public void removeAllItems() {
         queuedItems.clear();
-        this.player.pause();
-        this.player.release();
+        storeAudioPlaylist();
+        this.audioPlayerService.stopMedia();
         this.playIndex = 0;
-        this.player = null;
-        this.prepareOnly = true;
+        new StorageUtil(getApplicationContext()).storeAudioIndex(this.playIndex);
     }
 
     public String getCurrentTrackId() {
@@ -177,18 +177,17 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     }
 
     public float getCurrentPosition() {
-        if ((this.state == STATE.PLAYING) || (this.state == STATE.PAUSED)) {
-            return (this.player.getCurrentPosition() / 1000.0f);
+        if (audioPlayerService != null) {
+            return audioPlayerService.getCurrentPosition();
         }
-        else {
-            return -1;
-        }
+
+        return -1;
     }
 
     public float getDuration() {
         // If audio file already loaded and started, then return duration
-        if (this.player != null) {
-            return this.duration;
+        if (audioPlayerService != null) {
+            return audioPlayerService.getDuration();
         }
 
         return 0;
@@ -207,71 +206,37 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         }
     }
 
-    @Override
-    public void onCompletion(MediaPlayer player) {
-        if (this.playIndex >= queuedItems.size()-1) {
-            if (this.autoLoop) {
-                this.replay();
-            } else {
-                this.stop();
-                this.setState(STATE.ENDED);
-            }
-        } else {
-            this.playNext();
-        }
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer player) {
-        // Listen for playback completion
-        this.player.setOnCompletionListener(this);
-        this.startProgressTimer();
-
-        // If start playing after prepared
-        if (!this.prepareOnly) {
-            this.player.start();
-            this.setState(STATE.PLAYING);
-        } else {
-            this.setState(STATE.READY);
-        }
-        // Save off duration
-        this.duration = getDurationInSeconds();
-        // reset prepare only flag
-        this.prepareOnly = true;
-    }
-
-    @Override
-    public boolean onError(MediaPlayer player, int arg1, int arg2) {
-        // we don't want to send success callback
-        // so we don't call setState() here
-        this.state = STATE.FAILED;
-        this.endProgressTimer();
-        this.destroy();
-        // Send error notification to JavaScript
-        //sendErrorStatus(arg1);
-
-        // Send error to cordova.
-        this.cordovaLink.notifyOnError();
-
-        return false;
-    }
-
     private void setState(STATE inputState) {
         this.state = inputState;
-        this.cordovaLink.updateSongStatus();
+        handleChangeState();
+        
     }
 
-    private float getDurationInSeconds() {
-        return (this.player.getDuration() / 1000.0f);
-    }
-
-    private void startPlaying(String file) {
-        if (this.readyPlayer(file) && this.player != null) {
-            this.player.start();
-            this.setState(STATE.PLAYING);
-        } else {
-            this.prepareOnly = false;
+    private void handleChangeState() {
+        switch (this.state) {
+            case PAUSED:
+            case ENDED:
+                this.endProgressTimer();
+                break;
+            case PLAYING:
+                this.startProgressTimer();
+                break;
+            case READY:
+                this.endProgressTimer();
+                break;
+            case FAILED:
+                this.endProgressTimer();
+                // Send error to cordova.
+                this.cordovaLink.notifyOnError();
+                break;
+            case LOADING:
+                this.endProgressTimer();
+                break;
+            default:
+                break;
         }
+
+        this.cordovaLink.updateSongStatus();
     }
 
     private boolean readyPlayer(String file) {

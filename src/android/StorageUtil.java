@@ -53,6 +53,18 @@ public class StorageUtil {
         return preferences.getInt("audioIndex", -1);//return -1 if no data found
     }
 
+    public void storeAutoPlay(boolean autoPlay) {
+        preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("autoPlay", autoPlay);
+        editor.apply();
+    }
+
+    public boolean loadAutoPlay() {
+        preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+        return preferences.getBoolean("autoPlay", false);
+    }
+
     public void clearCachedAudioPlaylist() {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();

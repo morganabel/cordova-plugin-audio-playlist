@@ -4,6 +4,7 @@ import com.mabel.plugins.CordovaPluginAudioPlaylist;
 import com.mabel.plugins.AudioTrack;
 import com.mabel.plugins.AudioPlayer;
 import com.mabel.plugins.StorageUtil;
+import com.mabel.plugins.AudioPlayer.STATE;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -28,6 +29,8 @@ import android.support.v7.app.NotificationCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,6 +53,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String ACTION_STATE_CHANGE = "com.mabel.plugins.CordovaPluginAudioPlaylist.ACTION_STATE_CHANGE";
 
     private MediaPlayer mediaPlayer;
+    private float duration = -1;   
 
     //MediaSession
     private MediaSessionManager mediaSessionManager;
@@ -71,13 +75,32 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     //List of available Audio files
     private ArrayList<AudioTrack> audioList;
     private int audioIndex = -1;
+    private boolean autoLoop = false;
     private AudioTrack activeAudio; //an object on the currently playing audio
+    private STATE currentState = STATE.READY;
 
 
     //Handle incoming phone calls
     private boolean ongoingCall = false;
     private PhoneStateListener phoneStateListener;
     private TelephonyManager telephonyManager;
+
+    // Background threading
+    private volatile HandlerThread mHandlerThread;
+    private ServiceHandler mServiceHandler;
+
+    // Define how the handler will process messages
+    private final class ServiceHandler extends Handler {
+        public ServiceHandler(Looper looper) {
+            super(looper);
+        }
+
+        // Define how to handle any incoming messages here
+        @Override
+        public void handleMessage(Message message) {
+            // Handle messages as needed.
+        }
+    }
 
 
     /**
@@ -92,6 +115,12 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     public void onCreate() {
         super.onCreate();
         // Perform one-time setup procedures
+
+        // An Android handler thread internally operates on a looper.
+        mHandlerThread = new HandlerThread("AudioPlayerService.HandlerThread");
+        mHandlerThread.start();
+        // An Android service handler is a handler running on a specific background thread.
+        mServiceHandler = new ServiceHandler(mHandlerThread.getLooper());
 
         // Manage incoming phone calls during playback.
         // Pause MediaPlayer on incoming call,
@@ -164,6 +193,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
             telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
         }
 
+        // Stop background threading
+        mHandlerThread.quit();
+
         removeNotification();
 
         //unregister BroadcastReceivers
@@ -192,16 +224,23 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     public void onBufferingUpdate(MediaPlayer mp, int percent) {
         //Invoked indicating buffering status of
         //a media resource being streamed over the network.
+        if (!mp.isPlaying() && currentState != STATE.PAUSED) {
+            updateState(STATE.LOADING);
+        }
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        //Invoked when playback of a media source has completed.
-        stopMedia();
-
-        removeNotification();
-        //stop the service
-        stopSelf();
+        if (this.playIndex >= audioList.size()-1) {
+            if (autoLoop) {
+                loop();
+            } else {
+                this.stop();
+                updateState(AudioPlayer.STATE.ENDED);
+            }
+        } else {
+            skipToNext();
+        }
     }
 
     @Override
@@ -218,6 +257,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
                 Log.d("MediaPlayer Error", "MEDIA ERROR UNKNOWN " + extra);
                 break;
         }
+
+        updateState(AudioPlayer.STATE.FAILED);
+
         return false;
     }
 
@@ -231,6 +273,11 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     public void onPrepared(MediaPlayer mp) {
         //Invoked when the media source is ready for playback.
         playMedia();
+
+        // Save off duration
+        this.duration = getDurationInSeconds();
+
+        updateState(AudioPlayer.STATE.PLAYING);
     }
 
     @Override
@@ -352,6 +399,17 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         mediaPlayer.start();
     }
 
+    public void loop() {
+        audioIndex = 0;
+        //Update stored index
+        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
+
+        stopMedia();
+        //reset mediaPlayer
+        mediaPlayer.reset();
+        initMediaPlayer();
+    }
+
     public void skipToNext() {
 
         if (audioIndex == audioList.size() - 1) {
@@ -393,7 +451,26 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         initMediaPlayer();
     }
 
+    public float getCurrentPosition() {
+       if (mediaPlayer != null) {
+            return (mediaPlayer.getCurrentPosition() / 1000.0f);
+        }
+        else {
+            return -1;
+        }
+    }
+
+    public float getDuration() {
+        // If audio file already loaded and started, then return duration
+        if (mediaPlayer != null) {
+            return this.duration;
+        }
+
+        return 0;
+    }
+
     private void updateState(AudioPlayer.STATE state) {
+        currentState = state;
         Intent in = new Intent(ACTION_STATE_CHANGE);
         in.putExtra("state", state);
         LocalBroadcastManager.getInstance(this).sendBroadcast(in);
@@ -483,7 +560,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onPlay();
 
                 resumeMedia();
-                buildNotification(PlaybackStatus.PLAYING);
+                buildNotification(AudioPlayer.STATE.PLAYING);
             }
 
             @Override
@@ -491,7 +568,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onPause();
 
                 pauseMedia();
-                buildNotification(PlaybackStatus.PAUSED);
+                buildNotification(AudioPlayer.STATE.PAUSED);
             }
 
             @Override
@@ -500,7 +577,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
                 skipToNext();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                buildNotification(AudioPlayer.STATE.PLAYING);
             }
 
             @Override
@@ -509,7 +586,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
                 skipToPrevious();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                buildNotification(AudioPlayer.STATE.PLAYING);
             }
 
             @Override
@@ -528,14 +605,19 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     private void updateMetaData() {
-        Bitmap albumArt = loadImage(activeAudio.cover);
-        // Update the current metadata
-        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.artist)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.album)
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.title)
-                .build());
+        mServiceHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap albumArt = loadImage(activeAudio.cover);
+                // Update the current metadata
+                mediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.artist)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.album)
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.title)
+                        .build());
+            }
+        });
     }
 
     private void buildNotification(AudioPlayer.STATE playbackStatus) {
@@ -672,6 +754,10 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         registerReceiver(playNewAudio, filter);
     }
 
+    private float getDurationInSeconds() {
+        return (mediaPlayer.getDuration() / 1000.0f);
+    }
+
     private boolean isRemoteAudio(String file) {
         if (file.contains("http://") || file.contains("https://") || file.contains("rtsp://")) {
             return true;
@@ -682,20 +768,18 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     private void loadAudioFile(String file) throws IllegalArgumentException, SecurityException, IllegalStateException, IOException {
-        if (this.isRemoteAudio(file)) {
-            this.mediaPlayer.setDataSource(file);
-            this.mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            //if it's a streaming file, play mode is implied
-            //this.setState(STATE.LOADING);
+        if (isRemoteAudio(file)) {
+            mediaPlayer.setDataSource(file);
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         } else {
             File fp = new File(file);
             if (fp.exists()) {
                 FileInputStream fileInputStream = new FileInputStream(file);
-                this.mediaPlayer.setDataSource(fileInputStream.getFD());
+                mediaPlayer.setDataSource(fileInputStream.getFD());
                 fileInputStream.close();
             }
             else {
-                this.mediaPlayer.setDataSource(Environment.getExternalStorageDirectory().getPath() + "/" + file);
+                mediaPlayer.setDataSource(Environment.getExternalStorageDirectory().getPath() + "/" + file);
             }
         }
     }

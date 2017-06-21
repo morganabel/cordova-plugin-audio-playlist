@@ -27,7 +27,7 @@ public class AudioTrack implements Serializable {
         try {
             String inputUrl = track.getString("url");
             url = this.stripFileProtocol(inputUrl);
-            remoteUrl = this.stripFileProtocol(uriString.getString("remoteUrl"));
+            remoteUrl = this.stripFileProtocol(track.getString("remoteUrl"));
 
             id = track.getString("id");
             title = track.getString("title");

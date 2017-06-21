@@ -6,6 +6,7 @@ import com.mabel.plugins.AudioPlayer;
 import com.mabel.plugins.StorageUtil;
 import com.mabel.plugins.AudioPlayer.STATE;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -22,18 +23,29 @@ import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.os.HandlerThread;
+import android.os.Message;
+import android.os.Environment;
+import android.os.PowerManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v7.app.NotificationCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.os.Handler;
 import android.os.Looper;
 
+import java.io.File;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Created by Valdio Veliu on 16-07-11.
@@ -210,9 +222,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
      * Service Binder
      */
     public class LocalBinder extends Binder {
-        public MediaPlayerService getService() {
+        public AudioPlayerService getService() {
             // Return this instance of LocalService so clients can call public methods
-            return MediaPlayerService.this;
+            return AudioPlayerService.this;
         }
     }
 
@@ -231,11 +243,11 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        if (this.playIndex >= audioList.size()-1) {
+        if (audioIndex >= audioList.size()-1) {
             if (autoLoop) {
                 loop();
             } else {
-                this.stop();
+                stopMedia();
                 updateState(AudioPlayer.STATE.ENDED);
             }
         } else {
@@ -646,36 +658,29 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
         Bitmap largeIcon = loadImage(activeAudio.cover);
 
-        // Create a new Notification
-        NotificationCompat.Builder notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this)
-                // Hide the timestamp
-                .setShowWhen(false)
-                // Set the Notification style
-                .setStyle(new NotificationCompat.MediaStyle()
-                        // Attach our MediaSession token
-                        .setMediaSession(mediaSession.getSessionToken())
-                        // Show our playback controls in the compat view
-                        .setShowActionsInCompactView(0, 1, 2))
-                // Set the Notification color
-                .setColor(getResources().getColor(R.color.colorAccent))
-                // Set the large and small icons
-                .setLargeIcon(largeIcon)
-                .setSmallIcon(android.R.drawable.stat_sys_headset)
-                // Set Notification content information
-                .setContentText(activeAudio.artist)
-                .setContentTitle(activeAudio.album)
-                .setContentInfo(activeAudio.title)
-                // Add playback actions
-                .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
-                .addAction(notificationAction, "pause", play_pauseAction)
-                .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
+        Notification.MediaStyle style = new Notification.MediaStyle();
 
-        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+        // Create a new Notification
+        Notification.Builder builder = new Notification.Builder( this )
+            // Set Icons
+            .setLargeIcon(largeIcon)
+            .setSmallIcon(android.R.drawable.stat_sys_headset)
+            // Set Notification content information
+            .setContentText(activeAudio.artist)
+            .setContentTitle(activeAudio.album)
+            .setContentInfo(activeAudio.title)
+            // Add playback actions
+            .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
+            .addAction(notificationAction, "pause", play_pauseAction)
+            .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2))
+            .setStyle( style );
+
+        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, builder.build());
     }
 
 
     private PendingIntent playbackAction(int actionNumber) {
-        Intent playbackAction = new Intent(this, MediaPlayerService.class);
+        Intent playbackAction = new Intent(this, AudioPlayerService.class);
         switch (actionNumber) {
             case 0:
                 // Play
@@ -744,7 +749,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.reset();
             initMediaPlayer();
             updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);
+            buildNotification(AudioPlayer.STATE.PLAYING);
         }
     };
 
@@ -785,18 +790,20 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     private Bitmap loadImage(String url) {
-        DefaultHttpClient client = new DefaultHttpClient();
+        HttpURLConnection urlConnection = null;
         Bitmap bitmap = null;
         try {
-            HttpResponse response = client.execute(new HttpGet(url));
-            HttpEntity entity = response.getEntity();
-            if(entity != null) {
-                InputStream in = entity.getContent();
-                bitmap = BitmapFactory.decodeStream(in);
-            }
+            URL _url = new URL(url);
+            urlConnection = (HttpURLConnection) _url.openConnection();
+
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            bitmap = BitmapFactory.decodeStream(in);
+        } catch (Exception e) {
         }
-        catch (Exception e) {
+        finally {
+            if (urlConnection != null) urlConnection.disconnect();
         }
+        
         return bitmap;
     }
 }

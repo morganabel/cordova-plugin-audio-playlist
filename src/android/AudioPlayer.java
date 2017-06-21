@@ -7,6 +7,11 @@ import org.json.JSONObject;
 import com.mabel.plugins.CordovaPluginAudioPlaylist;
 import com.mabel.plugins.AudioTrack;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.os.IBinder;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -16,6 +21,7 @@ import android.os.Environment;
 import android.os.Handler;
 import java.util.*;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -40,7 +46,7 @@ public class AudioPlayer {
     public STATE state = STATE.READY;   
     public float duration = -1;    
     public Integer playIndex = 0;  
-    public List<AudioTrack> queuedItems = new ArrayList();
+    public ArrayList<AudioTrack> queuedItems = new ArrayList();
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.mabel.plugins.CordovaPluginAudioPlaylist.PlayNewAudio";
 
     private CordovaPluginAudioPlaylist cordovaLink = null;
@@ -58,13 +64,13 @@ public class AudioPlayer {
         this.autoLoop = link.autoLoopPlaylist;
 
         IntentFilter iff = new IntentFilter(AudioPlayerService.ACTION_STATE_CHANGE);
-        LocalBroadcastManager.getInstance(this).registerReceiver(onStateChange, iff);
+        LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).registerReceiver(onStateChange, iff);
     }
 
     public void destroy() {
         this.setState(STATE.READY);
         this.endProgressTimer();
-        LocalBroadcastManager.getInstance(this).unregisterReciever(onStateChange);
+        LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).unregisterReceiver(onStateChange);
     }
 
     public void play() {
@@ -121,7 +127,7 @@ public class AudioPlayer {
 
     public void setAutoLoop(boolean shouldAutoLoop) {
         this.autoLoop = shouldAutoLoop;
-        StorageUtil storage = new StorageUtil(getApplicationContext());
+        StorageUtil storage = new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext());
         storage.storeAutoPlay(shouldAutoLoop);
     }
 
@@ -153,7 +159,7 @@ public class AudioPlayer {
         storeAudioPlaylist();
         this.audioPlayerService.stopMedia();
         this.playIndex = 0;
-        new StorageUtil(getApplicationContext()).storeAudioIndex(this.playIndex);
+        new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext()).storeAudioIndex(this.playIndex);
     }
 
     public String getCurrentTrackId() {
@@ -239,61 +245,34 @@ public class AudioPlayer {
         this.cordovaLink.updateSongStatus();
     }
 
-    private boolean readyPlayer(String file) {
-        switch (this.state) {
-            case READY:
-            case FAILED:
-                if (this.player == null) {
-                    this.player = new MediaPlayer();
-                    this.player.setOnErrorListener(this);
-                }
-                this.player.reset();
-                this.startProgressTimer();
-                try {
-                    this.loadAudioFile(file);
-                } catch (Exception e) {
-                    //sendErrorStatus(MEDIA_ERR_ABORTED);
-                }
-                return false;
-            case LOADING:
-                this.prepareOnly = false;
-                return false;
-            case PLAYING:
-            case PAUSED:
-                return true;
-            default:
-                //sendErrorStatus(MEDIA_ERR_ABORTED);
-        }
-        
-        return false;
-    }
-
     private void playAudio(int audioIndex) {
+        Context localContext = this.cordovaLink.cordova.getActivity();
+
         //Check is service is active
         if (!serviceBound) {
             //Store Serializable audioList to SharedPreferences
             storeAudioPlaylist();
-            StorageUtil storage = new StorageUtil(getApplicationContext());
+            StorageUtil storage = new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext());
             storage.storeAudioIndex(playIndex);
 
-            Intent playerIntent = new Intent(this, AudioPlayerService.class);
-            startService(playerIntent);
-            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            Intent playerIntent = new Intent(localContext, AudioPlayerService.class);
+            localContext.startService(playerIntent);
+            localContext.bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
             //Store the new audioIndex to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
+            StorageUtil storage = new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext());
             storage.storeAudioIndex(playIndex);
 
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
-            sendBroadcast(broadcastIntent);
+            localContext.sendBroadcast(broadcastIntent);
         }
     }
 
     private void storeAudioPlaylist() {
         //Store Serializable audioList to SharedPreferences
-        StorageUtil storage = new StorageUtil(getApplicationContext());
+        StorageUtil storage = new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext());
         storage.storeAudio(queuedItems);
     }
 
@@ -305,38 +284,6 @@ public class AudioPlayer {
             setState(newState);
         }
     };
-
-    private void loadAudioFile(String file) throws IllegalArgumentException, SecurityException, IllegalStateException, IOException {
-        if (this.isRemoteAudio(file)) {
-            this.player.setDataSource(file);
-            this.player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            //if it's a streaming file, play mode is implied
-            this.setState(STATE.LOADING);
-            this.player.setOnPreparedListener(this);
-            this.player.prepareAsync();
-        } else {
-            if (file.startsWith("/android_asset/")) {
-                String f = file.substring(15);
-                android.content.res.AssetFileDescriptor fd = this.cordovaLink.cordova.getActivity().getAssets().openFd(f);
-                this.player.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
-            }
-            else {
-                File fp = new File(file);
-                if (fp.exists()) {
-                    FileInputStream fileInputStream = new FileInputStream(file);
-                    this.player.setDataSource(fileInputStream.getFD());
-                    fileInputStream.close();
-                }
-                else {
-                    this.player.setDataSource(Environment.getExternalStorageDirectory().getPath() + "/" + file);
-                }
-            }
-
-            this.setState(STATE.LOADING);
-            this.player.setOnPreparedListener(this);
-            this.player.prepareAsync();
-        }
-    }
 
     private void startProgressTimer() {
         if (this.stopRunnable == false && this.progressRunnable != null) {

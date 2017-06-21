@@ -17,8 +17,9 @@
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+            <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
         </config-file>
-        <config-file target="AndroidManifest.xml" parent="/application">
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <service android:name=".AudioPlayerService" />
         </config-file>
         <js-module src="www/localforage.min.js" name="LocalForage">
@@ -27,7 +28,12 @@
         <js-module src="www/promise-queue.min.js" name="PromiseQueue">
             <clobbers target="audioPlugin.promiseQueue" />
         </js-module>
-        <framework src="com.google.code.gson:2.7+" />
+        <framework src="com.google.code.gson:gson:2.7" />
+        <framework src="com.android.support:support-compat:24.2.0" />
+        <framework src="com.android.support:support-media-compat:24.2.0" />
+        <framework src="com.android.support:support-core-utils:24.2.0" />
+        <!--<framework src="com.google.android:support-v4:+" />
+        <framework src="com.android.support:appcompat-v7:+" />-->
         <source-file src="src/android/CordovaPluginAudioPlaylist.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioPlayer.java" target-dir="src/com/mabel/plugins" />
         <source-file src="src/android/AudioTrack.java" target-dir="src/com/mabel/plugins" />

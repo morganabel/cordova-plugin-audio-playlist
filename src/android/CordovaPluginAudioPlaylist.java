@@ -23,6 +23,7 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Environment;
+import android.os.Bundle;
 import android.net.Uri;
 
 import android.Manifest;
@@ -131,16 +132,6 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
 
     private void initAudio() {
         this.audioPlayer = new AudioPlayer(this);
-        //Check is service is active
-        if (!serviceBound) {
-            Intent playerIntent = new Intent(this, MediaPlayerService.class);
-            playerIntent.putExtra("media", media);
-            startService(playerIntent);
-            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-        } else {
-            //Service is active
-            //Send media with BroadcastReceiver
-        }
     }
 
     private void clearPlaylist() {

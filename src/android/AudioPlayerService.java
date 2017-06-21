@@ -91,6 +91,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     private AudioTrack activeAudio; //an object on the currently playing audio
     private STATE currentState = STATE.READY;
 
+    // Property that sets if audio list has been loaded yet.
+    public boolean audioListLoaded = false;
+
 
     //Handle incoming phone calls
     private boolean ongoingCall = false;
@@ -379,6 +382,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void playMedia() {
+        if (mediaPlayer == null) return;
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
         }
@@ -392,6 +396,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void pauseMedia() {
+        if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
@@ -399,6 +404,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void resumeMedia() {
+        if (mediaPlayer == null) return;
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();

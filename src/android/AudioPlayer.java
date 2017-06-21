@@ -86,7 +86,11 @@ public class AudioPlayer {
         }
 
         if (this.playIndex == index) {
-            this.resumePlaying();
+            if (serviceBound) {
+                this.resumePlaying();
+            } else {
+                this.playAudio(index);
+            }
         } else {
             this.endProgressTimer();
             this.state = STATE.READY;

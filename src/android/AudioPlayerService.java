@@ -290,7 +290,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         // Save off duration
         this.duration = getDurationInSeconds();
 
+        // Update audioplayer state and update android notification center
         updateState(AudioPlayer.STATE.PLAYING);
+        buildNotification(AudioPlayer.STATE.PLAYING);
     }
 
     @Override

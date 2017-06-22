@@ -594,7 +594,7 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
         updateInfoCenter()
         delegate?.jukeboxPlaybackProgressDidChange(self)
 
-        if !isBackgroundTimeLongEnough {
+        if !isBackgroundTimeLongEnough() {
             handleEnterBackground()
         }
     }

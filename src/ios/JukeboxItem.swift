@@ -218,7 +218,7 @@ open class JukeboxItem: NSObject {
         return true
     }
 
-    fileprivate func playerItemFailedToPlay(_ notification : Notification) {
+    @objc fileprivate func playerItemFailedToPlay(_ notification : Notification) {
         let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
     }
     

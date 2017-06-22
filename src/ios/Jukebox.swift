@@ -338,8 +338,6 @@ open class Jukebox: NSObject, JukeboxItemDelegate {
             print("[Jukebox - Error] \(error)")
             return nil
         }
-
-        self.cacheDirectory = FileManager.default().urlsForDirectory(.cachesDirectory, inDomains: .userDomainMask).first!
         
         assignQueuedItems(items)
         configureObservers()

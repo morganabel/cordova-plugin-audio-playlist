@@ -8,6 +8,7 @@ import com.mabel.plugins.CordovaPluginAudioPlaylist;
 import com.mabel.plugins.AudioTrack;
 
 import android.content.BroadcastReceiver;
+import android.support.v4.content.LocalBroadcastManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.IBinder;
@@ -22,7 +23,6 @@ import android.os.Handler;
 import java.util.*;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.File;
@@ -64,13 +64,16 @@ public class AudioPlayer {
         this.autoLoop = link.autoLoopPlaylist;
 
         IntentFilter iff = new IntentFilter(AudioPlayerService.ACTION_STATE_CHANGE);
+        IntentFilter trackChangeIntent = new IntentFilter(AudioPlayerService.ACTION_TRACK_CHANGE);
         LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).registerReceiver(onStateChange, iff);
+        LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).registerReceiver(onTrackChange, trackChangeIntent);
     }
 
     public void destroy() {
         this.setState(STATE.READY);
         this.endProgressTimer();
         LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).unregisterReceiver(onStateChange);
+        LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).unregisterReceiver(onTrackChange);
     }
 
     public void play() {
@@ -136,11 +139,11 @@ public class AudioPlayer {
     }
 
     public void playNext() {
-        this.play(this.playIndex + 1);
+        this.audioPlayerService.skipToNext();
     }
 
     public void playPrevious() {
-        this.play(this.playIndex - 1);
+        this.audioPlayerService.skipToPrevious();
     }
 
     public void replayCurrentItem() {
@@ -270,6 +273,7 @@ public class AudioPlayer {
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
+            
             localContext.sendBroadcast(broadcastIntent);
         }
     }
@@ -278,6 +282,10 @@ public class AudioPlayer {
         //Store Serializable audioList to SharedPreferences
         StorageUtil storage = new StorageUtil(this.cordovaLink.cordova.getActivity().getApplicationContext());
         storage.storeAudio(queuedItems);
+
+        if (serviceBound && audioPlayerService != null) {
+            audioPlayerService.refreshTrackList();
+        }
     }
 
     private BroadcastReceiver onStateChange = new BroadcastReceiver() {
@@ -286,6 +294,16 @@ public class AudioPlayer {
             // intent can contain anydata
             AudioPlayer.STATE newState = (AudioPlayer.STATE)intent.getSerializableExtra("state");
             setState(newState);
+        }
+    };
+
+    private BroadcastReceiver onTrackChange = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // intent can contain anydata
+            Integer newIndex = intent.getIntExtra("playIndex", 0);
+            playIndex = newIndex;
+            cordovaLink.updateSongStatus();
         }
     };
 

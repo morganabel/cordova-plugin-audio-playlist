@@ -47,9 +47,6 @@ import java.util.ArrayList;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/**
- * Created by Valdio Veliu on 16-07-11.
- */
 public class AudioPlayerService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener,
         MediaPlayer.OnInfoListener, MediaPlayer.OnBufferingUpdateListener,
@@ -63,6 +60,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String ACTION_NEXT = "com.mabel.plugins.CordovaPluginAudioPlaylist.ACTION_NEXT";
     public static final String ACTION_STOP = "com.mabel.plugins.CordovaPluginAudioPlaylist.ACTION_STOP";
     public static final String ACTION_STATE_CHANGE = "com.mabel.plugins.CordovaPluginAudioPlaylist.ACTION_STATE_CHANGE";
+    public static final String ACTION_TRACK_CHANGE = "com.mabel.plugins.CordovaPluginAudioPlaylist.ACTION_TRACK_CHANGE";
 
     private MediaPlayer mediaPlayer;
     private float duration = -1;   
@@ -90,10 +88,6 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     private boolean autoLoop = false;
     private AudioTrack activeAudio; //an object on the currently playing audio
     private STATE currentState = STATE.READY;
-
-    // Property that sets if audio list has been loaded yet.
-    public boolean audioListLoaded = false;
-
 
     //Handle incoming phone calls
     private boolean ongoingCall = false;
@@ -185,6 +179,10 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
+
+        // Play audio on initialize
+        playNewAudio();
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -215,7 +213,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
 
         //unregister BroadcastReceivers
         unregisterReceiver(becomingNoisyReceiver);
-        unregisterReceiver(playNewAudio);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onPlayAudio);
 
         //clear cached playlist
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
@@ -379,6 +377,10 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
             stopSelf();
         }
         mediaPlayer.prepareAsync();
+
+        Intent in = new Intent(ACTION_TRACK_CHANGE);
+        in.putExtra("playIndex", audioIndex);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(in);
     }
 
     public void playMedia() {
@@ -485,6 +487,10 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         }
 
         return 0;
+    }
+
+    public void refreshTrackList() {
+        audioList = new StorageUtil(getApplicationContext()).loadAudio();
     }
 
     private void updateState(AudioPlayer.STATE state) {
@@ -638,7 +644,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         });
     }
 
-    private void buildNotification(AudioPlayer.STATE playbackStatus) {
+    private void buildNotification(final AudioPlayer.STATE playbackStatus) {
 
         /**
          * Notification actions -> playbackAction()
@@ -647,41 +653,45 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
          *  2 -> Next track
          *  3 -> Previous track
          */
+        mServiceHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
+                PendingIntent play_pauseAction = null;
 
-        int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
-        PendingIntent play_pauseAction = null;
+                //Build a new notification according to the current state of the MediaPlayer
+                if (playbackStatus == AudioPlayer.STATE.PLAYING) {
+                    notificationAction = android.R.drawable.ic_media_pause;
+                    //create the pause action
+                    play_pauseAction = playbackAction(1);
+                } else if (playbackStatus == AudioPlayer.STATE.PAUSED) {
+                    notificationAction = android.R.drawable.ic_media_play;
+                    //create the play action
+                    play_pauseAction = playbackAction(0);
+                }
 
-        //Build a new notification according to the current state of the MediaPlayer
-        if (playbackStatus == AudioPlayer.STATE.PLAYING) {
-            notificationAction = android.R.drawable.ic_media_pause;
-            //create the pause action
-            play_pauseAction = playbackAction(1);
-        } else if (playbackStatus == AudioPlayer.STATE.PAUSED) {
-            notificationAction = android.R.drawable.ic_media_play;
-            //create the play action
-            play_pauseAction = playbackAction(0);
-        }
+                Bitmap largeIcon = loadImage(activeAudio.cover);
 
-        Bitmap largeIcon = loadImage(activeAudio.cover);
+                Notification.MediaStyle style = new Notification.MediaStyle();
 
-        Notification.MediaStyle style = new Notification.MediaStyle();
+                // Create a new Notification
+                Notification.Builder builder = new Notification.Builder( getApplicationContext() )
+                    // Set Icons
+                    .setLargeIcon(largeIcon)
+                    .setSmallIcon(android.R.drawable.stat_sys_headset)
+                    // Set Notification content information
+                    .setContentText(activeAudio.artist)
+                    .setContentTitle(activeAudio.album)
+                    .setContentInfo(activeAudio.title)
+                    // Add playback actions
+                    .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
+                    .addAction(notificationAction, "pause", play_pauseAction)
+                    .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2))
+                    .setStyle( style );
 
-        // Create a new Notification
-        Notification.Builder builder = new Notification.Builder( this )
-            // Set Icons
-            .setLargeIcon(largeIcon)
-            .setSmallIcon(android.R.drawable.stat_sys_headset)
-            // Set Notification content information
-            .setContentText(activeAudio.artist)
-            .setContentTitle(activeAudio.album)
-            .setContentInfo(activeAudio.title)
-            // Add playback actions
-            .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
-            .addAction(notificationAction, "pause", play_pauseAction)
-            .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2))
-            .setStyle( style );
-
-        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, builder.build());
+                ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, builder.build());
+            }
+        });
     }
 
 
@@ -733,36 +743,36 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
 
-    /**
-     * Play new Audio
-     */
-    private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
+    private BroadcastReceiver onPlayAudio = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-
-            //Get the new media index form SharedPreferences
-            audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
-            if (audioIndex != -1 && audioIndex < audioList.size()) {
-                //index is in a valid range
-                activeAudio = audioList.get(audioIndex);
-            } else {
-                stopSelf();
-            }
-
-            //A PLAY_NEW_AUDIO action received
-            //reset mediaPlayer to play the new Audio
-            stopMedia();
-            mediaPlayer.reset();
-            initMediaPlayer();
-            updateMetaData();
-            buildNotification(AudioPlayer.STATE.PLAYING);
+            playNewAudio();
         }
     };
+
+    private void playNewAudio() {
+        //Get the new media index form SharedPreferences
+        audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+        if (audioIndex != -1 && audioIndex < audioList.size()) {
+            //index is in a valid range
+            activeAudio = audioList.get(audioIndex);
+        } else {
+            stopSelf();
+        }
+
+        //A PLAY_NEW_AUDIO action received
+        //reset mediaPlayer to play the new Audio
+        stopMedia();
+        mediaPlayer.reset();
+        initMediaPlayer();
+        updateMetaData();
+        buildNotification(AudioPlayer.STATE.PLAYING);
+    }
 
     private void register_playNewAudio() {
         //Register playNewMedia receiver
         IntentFilter filter = new IntentFilter(AudioPlayer.Broadcast_PLAY_NEW_AUDIO);
-        registerReceiver(playNewAudio, filter);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onPlayAudio, filter);
     }
 
     private float getDurationInSeconds() {
@@ -801,8 +811,9 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         try {
             URL _url = new URL(url);
             urlConnection = (HttpURLConnection) _url.openConnection();
-
-            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            urlConnection.setDoInput(true);
+            urlConnection.connect();
+            InputStream in = urlConnection.getInputStream();
             bitmap = BitmapFactory.decodeStream(in);
         } catch (Exception e) {
         }

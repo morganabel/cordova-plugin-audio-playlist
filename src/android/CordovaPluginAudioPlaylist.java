@@ -46,6 +46,7 @@ public class CordovaPluginAudioPlaylist extends CordovaPlugin {
     }
 
     public void onDestroy() {
+        super.onDestroy();
         if (this.audioPlayer != null) this.audioPlayer.destroy();
     }
 

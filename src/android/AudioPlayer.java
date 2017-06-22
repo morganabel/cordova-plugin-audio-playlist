@@ -74,6 +74,11 @@ public class AudioPlayer {
         this.endProgressTimer();
         LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).unregisterReceiver(onStateChange);
         LocalBroadcastManager.getInstance(this.cordovaLink.cordova.getActivity().getApplicationContext()).unregisterReceiver(onTrackChange);
+
+        if (serviceBound) {
+            this.cordovaLink.cordova.getActivity().unbindService(serviceConnection);
+            audioPlayerService.stopSelf();
+        }
     }
 
     public void play() {

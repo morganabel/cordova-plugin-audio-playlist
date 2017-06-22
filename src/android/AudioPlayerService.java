@@ -181,7 +181,10 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         handleIncomingActions(intent);
 
         // Play audio on initialize
-        playNewAudio();
+        String action = intent.getAction();
+        if (null == action) {
+            playNewAudio();
+        }
 
         return super.onStartCommand(intent, flags, startId);
     }

@@ -389,6 +389,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         if (mediaPlayer == null) return;
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
+            updateState(AudioPlayer.STATE.PLAYING);
         }
     }
 
@@ -404,6 +405,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
+            updateState(AudioPlayer.STATE.PAUSED);
         }
     }
 
@@ -412,6 +414,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
+            updateState(AudioPlayer.STATE.PLAYING);
         }
     }
 
@@ -419,6 +422,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnComplet
         if (mediaPlayer == null) return;
         mediaPlayer.seekTo(0);
         mediaPlayer.start();
+        updateState(AudioPlayer.STATE.PLAYING);
     }
 
     public void loop() {
